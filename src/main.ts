@@ -75,7 +75,7 @@ class LorenzVisualizer {
     this.dummy.updateMatrix();
     this.mesh.setMatrixAt(this.n % this.mesh.count, this.dummy.matrix);
     this.mesh.instanceMatrix.needsUpdate = true;
-    this.mesh.computeBoundingSphere();
+    // this.mesh.computeBoundingSphere();
     this.n += 1;
   }
 }
@@ -118,12 +118,24 @@ lorenz1.addTo(scene);
 lorenz2.addTo(scene);
 
 function animate() {
-  setTimeout(() => {
-    requestAnimationFrame(animate);
-  }, 50);
+  if (!paused) {
+    setTimeout(() => {
+      requestAnimationFrame(animate);
+    }, 50);
+  }
   lorenz1.update();
   lorenz2.update();
   render();
 }
 
-animate();
+let paused = true;
+
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    paused = !paused;
+
+    if (!paused) {
+      animate();
+    }
+  }
+});
