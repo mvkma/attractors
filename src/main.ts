@@ -88,34 +88,32 @@ function render() {
 
 controls.addEventListener("change", render);
 
-const lorenz1 = new LorenzVisualizer({
-  rungeKuttaParams: {
-    f: lorenz,
-    x0: new Float32Array([1, 2, 1]),
-    t0: 0,
-    dt: 0.01,
-    eps: 1e-6,
-  },
-  color: 0xff0000,
-  count: 1024,
-  radius: 0.3,
-});
+const instances: LorenzVisualizer[] = []
+const colors = [
+  0x845ec2,
+  0xd65db1,
+  0xff6f91,
+  0xff9671,
+  0xffc75f,
+  0xf9f871,
+];
 
-const lorenz2 = new LorenzVisualizer({
-  rungeKuttaParams: {
-    f: lorenz,
-    x0: new Float32Array([1.1, 2, 1]),
-    t0: 0,
-    dt: 0.01,
-    eps: 1e-6,
-  },
-  color: 0x00ff00,
-  count: 1024,
-  radius: 0.3,
-});
-
-lorenz1.addTo(scene);
-lorenz2.addTo(scene);
+for (let i = 0; i < colors.length; i++) {
+  const vis = new LorenzVisualizer({
+    rungeKuttaParams: {
+      f: lorenz,
+      x0: new Float32Array([1 + i, 2 - i, i * 10]),
+      t0: 0,
+      dt: 0.01,
+      eps: 1e-6,
+    },
+    color: colors[i],
+    count: 1024,
+    radius: 0.3,
+  });
+  vis.addTo(scene);
+  instances.push(vis);
+}
 
 function animate() {
   if (!paused) {
@@ -123,8 +121,7 @@ function animate() {
       requestAnimationFrame(animate);
     }, 50);
   }
-  lorenz1.update();
-  lorenz2.update();
+  instances.forEach((instance) => instance.update());
   render();
 }
 
