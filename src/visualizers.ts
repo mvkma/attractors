@@ -29,6 +29,11 @@ export class Spheres extends THREE.InstancedMesh {
     this.integrator = params.integrator;
   }
 
+  setColor(color: THREE.ColorRepresentation) {
+    this.material.color = color;
+    this.material.emissive = color;
+  }
+
   update() {
     const { x } = this.integrator.next();
 

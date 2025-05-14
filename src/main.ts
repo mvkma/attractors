@@ -6,6 +6,7 @@ import { lorenz } from './systems';
 import { Spheres } from './visualizers';
 import { RungeKuttaIntegrator } from './integration';
 import colormaps from './colormaps';
+import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div id="scene">
@@ -17,6 +18,7 @@ const height = 600;
 const scene = new THREE.Scene();
 const aspect = height / width;
 const camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
+const gui = new GUI();
 
 const renderer = new THREE.WebGLRenderer()
 renderer.setSize(width, height);
@@ -46,8 +48,11 @@ function render() {
 controls.addEventListener("change", render);
 
 const instances: Spheres[] = []
+const parameters = {
+  colormap: "red",
+};
 
-const colormap = colormaps.get("magma")!;
+let colormap = colormaps.get(parameters.colormap)!;
 const count = 5;
 
 for (let i = 0; i < count; i++) {
@@ -61,13 +66,25 @@ for (let i = 0; i < count; i++) {
 
   const spheres = new Spheres({
     integrator: integrator,
-    color: colormap.sample(i / count),
+    color: colormap.sample((i + 0.5) / count),
     count: 1024,
     radius: 0.3,
   });
   scene.add(spheres);
   instances.push(spheres);
 }
+
+gui.add(parameters, "colormap", [...colormaps.keys()]).onChange((key) => {
+  if (!colormaps.has(key)) {
+    return;
+  }
+
+  colormap = colormaps.get(key)!;
+
+  for (let i = 0; i < count; i++) {
+    instances[i].setColor(colormap.sample((i + 0.5) / count));
+  }
+});
 
 function animate() {
   if (!paused) {
