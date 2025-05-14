@@ -8,31 +8,27 @@ export interface LorenzVisualizerParams {
   count: number;
 }
 
-export class LorenzVisualizer {
+export class LorenzVisualizer extends THREE.InstancedMesh {
   private n = 0;
 
   private readonly integrator;
-  private readonly geometry;
-  private readonly material;
-  private readonly mesh;
   private readonly dummy;
   
   constructor(params: LorenzVisualizerParams) {
-    this.geometry = new THREE.SphereGeometry(params.radius);
-    this.material = new THREE.MeshPhongMaterial({
+    const geometry = new THREE.SphereGeometry(params.radius);
+    const material = new THREE.MeshPhongMaterial({
       color: params.color,
+      emissive: params.color,
+      emissiveIntensity: 0.3,
     });
 
-    this.mesh = new THREE.InstancedMesh(this.geometry, this.material, params.count);
-    this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    super(geometry, material, params.count);
+
+    this.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 
     this.dummy = new THREE.Object3D();
 
     this.integrator = new RungeKuttaIntegrator(params.rungeKuttaParams);
-  }
-
-  addTo(scene: THREE.Scene) {
-    scene.add(this.mesh);
   }
 
   update() {
@@ -40,9 +36,8 @@ export class LorenzVisualizer {
 
     this.dummy.position.set(x[0], x[1], x[2]);
     this.dummy.updateMatrix();
-    this.mesh.setMatrixAt(this.n % this.mesh.count, this.dummy.matrix);
-    this.mesh.instanceMatrix.needsUpdate = true;
-    // this.mesh.computeBoundingSphere();
+    this.setMatrixAt(this.n % this.count, this.dummy.matrix);
+    this.instanceMatrix.needsUpdate = true;
     this.n += 1;
   }
 }

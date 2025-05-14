@@ -35,7 +35,6 @@ scene.add(ambientLight);
 const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
 scene.add(directionalLight);
 
-
 camera.position.z = 55;
 
 function render() {
@@ -67,7 +66,7 @@ for (let i = 0; i < colors.length; i++) {
     count: 1024,
     radius: 0.3,
   });
-  vis.addTo(scene);
+  scene.add(vis);
   instances.push(vis);
 }
 
