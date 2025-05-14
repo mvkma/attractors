@@ -5,6 +5,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { lorenz } from './systems';
 import { Spheres } from './visualizers';
 import { RungeKuttaIntegrator } from './integration';
+import colormaps from './colormaps';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div id="scene">
@@ -45,16 +46,11 @@ function render() {
 controls.addEventListener("change", render);
 
 const instances: Spheres[] = []
-const colors = [
-  0x845ec2,
-  0xd65db1,
-  0xff6f91,
-  0xff9671,
-  0xffc75f,
-  0xf9f871,
-];
 
-for (let i = 0; i < colors.length; i++) {
+const colormap = colormaps.get("magma")!;
+const count = 5;
+
+for (let i = 0; i < count; i++) {
   const integrator = new RungeKuttaIntegrator({
       f: lorenz,
       x0: new Float32Array([1 + i, 2 - i, i * 10]),
@@ -65,7 +61,7 @@ for (let i = 0; i < colors.length; i++) {
 
   const spheres = new Spheres({
     integrator: integrator,
-    color: colors[i],
+    color: colormap.sample(i / count),
     count: 1024,
     radius: 0.3,
   });
