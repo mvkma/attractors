@@ -2,7 +2,7 @@ import './style.css'
 
 import * as THREE from 'three';
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { lorenz } from './systems';
+import { lorenz, roessler } from './systems';
 import { Spheres } from './visualizers';
 import { RungeKuttaIntegrator } from './integration';
 import colormaps from './colormaps';
@@ -49,30 +49,56 @@ controls.addEventListener("change", render);
 
 const instances: Spheres[] = []
 const parameters = {
+  system: "lorenz",
   colormap: "red",
 };
 
 let colormap = colormaps.get(parameters.colormap)!;
 const count = 5;
 
-for (let i = 0; i < count; i++) {
-  const integrator = new RungeKuttaIntegrator({
-      f: lorenz,
+function init(count: number, system: string) {
+  let func;
+
+  if (system === "lorenz") {
+    func = lorenz;
+  } else if (system === "roessler") {
+    func = roessler;
+  } else {
+    return;
+  }
+    
+  for (let i = 0; i < count; i++) {
+    const integrator = new RungeKuttaIntegrator({
+      f: func,
       x0: new Float32Array([1 + i, 2 - i, i * 10]),
       t0: 0,
       dt: 0.01,
       eps: 1e-6,
-  });
+    });
 
-  const spheres = new Spheres({
-    integrator: integrator,
-    color: colormap.sample((i + 0.5) / count),
-    count: 1024,
-    radius: 0.3,
-  });
-  scene.add(spheres);
-  instances.push(spheres);
+    const spheres = new Spheres({
+      integrator: integrator,
+      color: colormap.sample((i + 0.5) / count),
+      count: 1024,
+      radius: 0.3,
+    });
+    scene.add(spheres);
+    instances.push(spheres);
+  }
 }
+
+gui.add(parameters, "system", ["lorenz", "roessler"]).onChange((system) => {
+  for (let i = 0; i < count; i++) {
+    const sphere = instances.pop();
+    if (!sphere) {
+      break;
+    }
+
+    scene.remove(sphere)
+  }
+
+  init(count, system);
+});
 
 gui.add(parameters, "colormap", [...colormaps.keys()]).onChange((key) => {
   if (!colormaps.has(key)) {
@@ -89,6 +115,8 @@ gui.add(parameters, "colormap", [...colormaps.keys()]).onChange((key) => {
     }
   }
 });
+
+init(count, parameters.system);
 
 function animate() {
   if (!paused) {
