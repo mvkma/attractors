@@ -1,4 +1,4 @@
-type OdeFunction = (_t: number, x: Float32Array, xdot: Float32Array) => void;
+import type { OdeFunction } from "./systems";
 
 export interface RungeKuttaParams {
   f: OdeFunction;

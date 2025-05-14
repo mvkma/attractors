@@ -2,11 +2,11 @@ import './style.css'
 
 import * as THREE from 'three';
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { lorenz, roessler } from './systems';
+import { LorenzSystem, RoesslerSystem } from './systems';
 import { Spheres } from './visualizers';
 import { RungeKuttaIntegrator } from './integration';
 import colormaps from './colormaps';
-import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
+import GUI  from 'three/examples/jsm/libs/lil-gui.module.min.js';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div id="scene">
@@ -47,6 +47,7 @@ function render() {
 
 controls.addEventListener("change", render);
 
+const controllers: any[] = [];
 const instances: Spheres[] = []
 const parameters = {
   system: "lorenz",
@@ -57,19 +58,27 @@ let colormap = colormaps.get(parameters.colormap)!;
 const count = 5;
 
 function init(count: number, system: string) {
-  let func;
+  let odeSystem;
 
   if (system === "lorenz") {
-    func = lorenz;
+    odeSystem = new LorenzSystem();
   } else if (system === "roessler") {
-    func = roessler;
+    odeSystem = new RoesslerSystem();
   } else {
     return;
   }
-    
+
+  const params = odeSystem.parameters;
+  for (const k of Object.keys(params)) {
+    const controller = gui.add(params, k).onChange(() => {
+      odeSystem.parameters = params;
+    });
+    controllers.push(controller);
+  }
+
   for (let i = 0; i < count; i++) {
     const integrator = new RungeKuttaIntegrator({
-      f: func,
+      f: odeSystem.func.bind(odeSystem),
       x0: new Float32Array([1 + i, 2 - i, i * 10]),
       t0: 0,
       dt: 0.01,
@@ -94,8 +103,17 @@ gui.add(parameters, "system", ["lorenz", "roessler"]).onChange((system) => {
       break;
     }
 
+    while (controllers.length > 0) {
+      const c = controllers.pop();
+      c.destroy();
+    }
+
     scene.remove(sphere)
   }
+
+  controllers.forEach((controller) => {
+    controller.destroy();
+  });
 
   init(count, system);
 });
