@@ -2,8 +2,9 @@ import './style.css'
 
 import * as THREE from 'three';
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { lorenz } from './integration';
-import { LorenzVisualizer } from './lorenz';
+import { lorenz } from './systems';
+import { Spheres } from './visualizers';
+import { RungeKuttaIntegrator } from './integration';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div id="scene">
@@ -43,7 +44,7 @@ function render() {
 
 controls.addEventListener("change", render);
 
-const instances: LorenzVisualizer[] = []
+const instances: Spheres[] = []
 const colors = [
   0x845ec2,
   0xd65db1,
@@ -54,20 +55,22 @@ const colors = [
 ];
 
 for (let i = 0; i < colors.length; i++) {
-  const vis = new LorenzVisualizer({
-    rungeKuttaParams: {
+  const integrator = new RungeKuttaIntegrator({
       f: lorenz,
       x0: new Float32Array([1 + i, 2 - i, i * 10]),
       t0: 0,
       dt: 0.01,
       eps: 1e-6,
-    },
+  });
+
+  const spheres = new Spheres({
+    integrator: integrator,
     color: colors[i],
     count: 1024,
     radius: 0.3,
   });
-  scene.add(vis);
-  instances.push(vis);
+  scene.add(spheres);
+  instances.push(spheres);
 }
 
 function animate() {

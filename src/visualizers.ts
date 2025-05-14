@@ -1,20 +1,20 @@
 import * as THREE from 'three';
-import { RungeKuttaIntegrator, RungeKuttaParams } from "./integration";
+import { RungeKuttaIntegrator } from '../../../code/attractors/src/integration';
 
-export interface LorenzVisualizerParams {
-  rungeKuttaParams: RungeKuttaParams,
+export interface SphereParams {
+  integrator: RungeKuttaIntegrator,
   radius: number;
   color: THREE.ColorRepresentation;
   count: number;
 }
 
-export class LorenzVisualizer extends THREE.InstancedMesh {
+export class Spheres extends THREE.InstancedMesh {
   private n = 0;
 
   private readonly integrator;
   private readonly dummy;
   
-  constructor(params: LorenzVisualizerParams) {
+  constructor(params: SphereParams) {
     const geometry = new THREE.SphereGeometry(params.radius);
     const material = new THREE.MeshPhongMaterial({
       color: params.color,
@@ -23,12 +23,10 @@ export class LorenzVisualizer extends THREE.InstancedMesh {
     });
 
     super(geometry, material, params.count);
-
     this.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 
     this.dummy = new THREE.Object3D();
-
-    this.integrator = new RungeKuttaIntegrator(params.rungeKuttaParams);
+    this.integrator = params.integrator;
   }
 
   update() {
