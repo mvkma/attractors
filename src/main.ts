@@ -83,6 +83,10 @@ gui.add(parameters, "colormap", [...colormaps.keys()]).onChange((key) => {
 
   for (let i = 0; i < count; i++) {
     instances[i].setColor(colormap.sample((i + 0.5) / count));
+
+    if (paused) {
+      render();
+    }
   }
 });
 
