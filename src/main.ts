@@ -52,6 +52,7 @@ const instances: Spheres[] = []
 const parameters = {
   system: "lorenz",
   colormap: "red",
+  tail: 1000,
 };
 
 let colormap = colormaps.get(parameters.colormap)!;
@@ -127,6 +128,16 @@ gui.add(parameters, "colormap", [...colormaps.keys()]).onChange((key) => {
 
   for (let i = 0; i < count; i++) {
     instances[i].setColor(colormap.sample((i + 0.5) / count));
+
+    if (paused) {
+      render();
+    }
+  }
+});
+
+gui.add(parameters, "tail", 1, 1000, 1).onChange((tail) => {
+  for (let i = 0; i < count; i++) {
+    instances[i].setCount(tail);
 
     if (paused) {
       render();

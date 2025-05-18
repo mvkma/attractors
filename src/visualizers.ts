@@ -8,10 +8,13 @@ export interface SphereParams {
   count: number;
 }
 
+const IDENTITY = new THREE.Matrix4();
+
 export class Spheres extends THREE.InstancedMesh {
   private n = 0;
 
   private readonly integrator;
+  private readonly maxCount;
   private readonly dummy;
   
   constructor(params: SphereParams) {
@@ -27,6 +30,15 @@ export class Spheres extends THREE.InstancedMesh {
 
     this.dummy = new THREE.Object3D();
     this.integrator = params.integrator;
+    this.maxCount = params.count;
+  }
+
+  setCount(count: number) {
+    for (let i = this.count; i < count; i++) {
+      this.setMatrixAt(i, IDENTITY);
+    }
+    this.count = THREE.MathUtils.clamp(count, 0, this.maxCount);
+    this.instanceMatrix.needsUpdate = true;
   }
 
   setColor(color: THREE.ColorRepresentation) {
