@@ -33,10 +33,10 @@ const pointLight = new THREE.PointLight(0xffffff, 1.0);
 pointLight.position.set(0, 0, 0);
 scene.add(pointLight);
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambientLight);
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 10.0);
 scene.add(directionalLight);
 
 camera.position.z = 55;
@@ -88,7 +88,12 @@ function init(count: number, system: string) {
 
     const spheres = new Spheres({
       integrator: integrator,
-      color: colormap.sample((i + 0.5) / count),
+      colorOptions: {
+        // type: "constant",
+        // color: colormap.sample((i + 0.5) / count),
+        type: "colormap",
+        colormap: colormap,
+      },
       count: 1024,
       radius: 0.3,
     });
@@ -127,7 +132,20 @@ gui.add(parameters, "colormap", [...colormaps.keys()]).onChange((key) => {
   colormap = colormaps.get(key)!;
 
   for (let i = 0; i < count; i++) {
-    instances[i].setColor(colormap.sample((i + 0.5) / count));
+    switch (instances[i].colorOptions.type) {
+      case "constant":
+        instances[i].colorOptions = {
+          type: "constant",
+          color: colormap.sample((i + 0.5) / count)
+        };
+        break;
+      case "colormap":
+        instances[i].colorOptions = {
+          type: "colormap",
+          colormap: colormap
+        };
+        break;
+    }
 
     if (paused) {
       render();

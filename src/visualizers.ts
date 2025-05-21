@@ -1,11 +1,24 @@
 import * as THREE from 'three';
 import { RungeKuttaIntegrator } from '../../../code/attractors/src/integration';
+import { ColorMap } from './colormap';
+
+interface ColorOptionsConstant {
+  type: "constant";
+  color: THREE.ColorRepresentation;
+}
+
+interface ColorOptionsColormap {
+  type: "colormap";
+  colormap: ColorMap;
+}
+
+type ColorOptions = ColorOptionsConstant | ColorOptionsColormap;
 
 export interface SphereParams {
   integrator: RungeKuttaIntegrator,
   radius: number;
-  color: THREE.ColorRepresentation;
   count: number;
+  colorOptions: ColorOptions;
 }
 
 const IDENTITY = new THREE.Matrix4();
@@ -13,17 +26,28 @@ const IDENTITY = new THREE.Matrix4();
 export class Spheres extends THREE.InstancedMesh {
   private n = 0;
 
+  private colorOpts: ColorOptions;
+
   private readonly integrator;
   private readonly maxCount;
   private readonly dummy;
   
   constructor(params: SphereParams) {
     const geometry = new THREE.SphereGeometry(params.radius);
-    const material = new THREE.MeshPhongMaterial({
-      color: params.color,
-      emissive: params.color,
-      emissiveIntensity: 0.3,
-    });
+
+    const colorOpts = params.colorOptions;
+    const materialOptions: THREE.MeshPhongMaterialParameters = {
+    };
+
+    switch (colorOpts.type) {
+      case "constant":
+        materialOptions.color = colorOpts.color;
+        materialOptions.emissive = colorOpts.color;
+        materialOptions.emissiveIntensity = 0.3;
+        break;
+    }
+
+    const material = new THREE.MeshPhongMaterial(materialOptions);
 
     super(geometry, material, params.count);
     this.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -31,6 +55,7 @@ export class Spheres extends THREE.InstancedMesh {
     this.dummy = new THREE.Object3D();
     this.integrator = params.integrator;
     this.maxCount = params.count;
+    this.colorOpts = params.colorOptions;
   }
 
   setCount(count: number) {
@@ -41,17 +66,36 @@ export class Spheres extends THREE.InstancedMesh {
     this.instanceMatrix.needsUpdate = true;
   }
 
-  setColor(color: THREE.ColorRepresentation) {
-    this.material.color = color;
-    this.material.emissive = color;
+  get colorOptions() {
+    return this.colorOpts;
+  }
+
+  set colorOptions(colorOptions: ColorOptions) {
+    this.colorOpts = colorOptions;
+
+    if (this.colorOpts.type === "constant") {
+      this.material.color = this.colorOpts.color;
+      this.material.emissive = this.colorOpts.color;
+    }
   }
 
   update() {
     const { x } = this.integrator.next();
 
+    const n = this.n % this.count;
+
     this.dummy.position.set(x[0], x[1], x[2]);
     this.dummy.updateMatrix();
-    this.setMatrixAt(this.n % this.count, this.dummy.matrix);
+    this.setMatrixAt(n, this.dummy.matrix);
+
+    if (this.colorOptions.type === "colormap") {
+      const color =  this.colorOptions.colormap.sample(n / this.count);
+      this.setColorAt(n, color);
+      if (this.instanceColor) {
+        this.instanceColor.needsUpdate = true;
+      }
+    }
+
     this.instanceMatrix.needsUpdate = true;
     this.n += 1;
   }
