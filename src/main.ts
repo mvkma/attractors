@@ -26,7 +26,7 @@ renderer.setSize(width, height);
 document.querySelector("#scene")?.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(0, 0, 0);
+controls.target.set(-8, -8, 25);
 controls.update();
 
 const pointLight = new THREE.PointLight(0xffffff, 1.0);
@@ -39,7 +39,7 @@ scene.add(ambientLight);
 const directionalLight = new THREE.DirectionalLight(0xffffff, 10.0);
 scene.add(directionalLight);
 
-camera.position.z = 55;
+camera.position.z = -55;
 
 function render() {
   renderer.render(scene, camera);
@@ -53,6 +53,7 @@ const parameters = {
   system: "lorenz",
   colormap: "red",
   tail: 1000,
+  interval: 50,
 };
 
 let colormap = colormaps.get(parameters.colormap)!;
@@ -86,6 +87,7 @@ function init(count: number, system: string) {
       eps: 1e-6,
     });
 
+    colormap.mirror = true;
     const spheres = new Spheres({
       integrator: integrator,
       colorOptions: {
@@ -130,6 +132,7 @@ gui.add(parameters, "colormap", [...colormaps.keys()]).onChange((key) => {
   }
 
   colormap = colormaps.get(key)!;
+  colormap.mirror = true;
 
   for (let i = 0; i < count; i++) {
     switch (instances[i].colorOptions.type) {
@@ -163,13 +166,15 @@ gui.add(parameters, "tail", 1, 1000, 1).onChange((tail) => {
   }
 });
 
+gui.add(parameters, "interval", 0, 500, 10);
+
 init(count, parameters.system);
 
 function animate() {
   if (!paused) {
     setTimeout(() => {
       requestAnimationFrame(animate);
-    }, 50);
+    }, parameters.interval);
   }
   instances.forEach((instance) => instance.update());
   render();

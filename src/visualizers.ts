@@ -86,17 +86,17 @@ export class Spheres extends THREE.InstancedMesh {
 
     this.dummy.position.set(x[0], x[1], x[2]);
     this.dummy.updateMatrix();
+
     this.setMatrixAt(n, this.dummy.matrix);
+    this.instanceMatrix.needsUpdate = true;
 
     if (this.colorOptions.type === "colormap") {
-      const color =  this.colorOptions.colormap.sample(n / this.count);
-      this.setColorAt(n, color);
+      this.setColorAt(n, this.colorOptions.colormap.sample(n / this.count * 2));
       if (this.instanceColor) {
         this.instanceColor.needsUpdate = true;
       }
     }
 
-    this.instanceMatrix.needsUpdate = true;
     this.n += 1;
   }
 }
