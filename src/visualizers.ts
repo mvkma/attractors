@@ -56,6 +56,7 @@ export class Spheres extends THREE.InstancedMesh {
     this.integrator = params.integrator;
     this.maxCount = params.count;
     this.colorOpts = params.colorOptions;
+    this.castShadow = true;
   }
 
   setCount(count: number) {

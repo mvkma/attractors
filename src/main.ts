@@ -7,6 +7,7 @@ import { Spheres } from './visualizers';
 import { RungeKuttaIntegrator } from './integration';
 import colormaps from './colormaps';
 import GUI  from 'three/examples/jsm/libs/lil-gui.module.min.js';
+import { Planes } from './planes';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div id="scene">
@@ -26,20 +27,25 @@ renderer.setSize(width, height);
 document.querySelector("#scene")?.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(-8, -8, 25);
+controls.target.set(0, 0, 0);
 controls.update();
-
-const pointLight = new THREE.PointLight(0xffffff, 1.0);
-pointLight.position.set(0, 0, 0);
-scene.add(pointLight);
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambientLight);
 
 const directionalLight = new THREE.DirectionalLight(0xffffff, 10.0);
+directionalLight.position.set(0, 50, 50);
+directionalLight.target.position.set(0, 0, 0);
 scene.add(directionalLight);
 
 camera.position.z = -55;
+
+const planes = new Planes({
+  width: 50,
+  height: 50,
+  color: 0x253b56,
+});
+scene.add(planes);
 
 function render() {
   renderer.render(scene, camera);
