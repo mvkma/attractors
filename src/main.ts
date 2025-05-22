@@ -3,7 +3,7 @@ import './style.css'
 import * as THREE from 'three';
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { LorenzSystem, RoesslerSystem } from './systems';
-import { Spheres } from './visualizers';
+import { Spheres, Traces } from './visualizers';
 import { RungeKuttaIntegrator } from './integration';
 import colormaps from './colormaps';
 import GUI  from 'three/examples/jsm/libs/lil-gui.module.min.js';
@@ -18,7 +18,7 @@ const height = 600;
 
 const scene = new THREE.Scene();
 const aspect = height / width;
-const camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
 const gui = new GUI();
 
 const renderer = new THREE.WebGLRenderer()
@@ -54,7 +54,7 @@ function render() {
 controls.addEventListener("change", render);
 
 const controllers: any[] = [];
-const instances: Spheres[] = []
+const instances: Spheres[] | Traces[] = []
 const parameters = {
   system: "lorenz",
   colormap: "red",
@@ -94,7 +94,7 @@ function init(count: number, system: string) {
     });
 
     colormap.mirror = true;
-    const spheres = new Spheres({
+    const spheres = new Traces({
       integrator: integrator,
       colorOptions: {
         // type: "constant",
@@ -103,7 +103,7 @@ function init(count: number, system: string) {
         colormap: colormap,
       },
       count: 1024,
-      radius: 0.3,
+      // radius: 0.3,
     });
     scene.add(spheres);
     instances.push(spheres);

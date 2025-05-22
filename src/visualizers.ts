@@ -101,3 +101,74 @@ export class Spheres extends THREE.InstancedMesh {
     this.n += 1;
   }
 }
+
+export interface TracesParams {
+  integrator: RungeKuttaIntegrator;
+  count: number;
+  colorOptions: ColorOptions;
+}
+
+export class Traces extends THREE.Line {
+  private n = 0;
+
+  private colorOpts: ColorOptions;
+
+  private points: Float32Array;
+  private positions: THREE.BufferAttribute;
+  private readonly integrator;
+
+  constructor(params: TracesParams) {
+    const geometry = new THREE.BufferGeometry()
+
+    const material = new THREE.LineBasicMaterial({
+      color: 0xffff00,
+      linewidth: 5,
+    });
+
+    super(geometry, material);
+
+    this.integrator = params.integrator;
+    this.colorOpts = params.colorOptions;
+    this.points = new Float32Array(params.count * 3);
+    this.positions = new THREE.BufferAttribute(this.points, 3);
+
+    this.geometry.setAttribute("position", this.positions);
+  }
+
+  setCount(count: number) {
+    const points = new Float32Array(count * 3);
+    points.set(this.points.slice(0, count * 3))
+    this.points = points;
+    this.positions = new THREE.BufferAttribute(this.points, 3);
+    this.geometry.setAttribute("position", this.positions);
+  }
+
+  get colorOptions() {
+    return this.colorOpts;
+  }
+
+  set colorOptions(colorOptions: ColorOptions) {
+    this.colorOpts = colorOptions;
+  }
+
+  update() {
+    const { x } = this.integrator.next()
+
+    const stride = (3 * this.n);
+
+    if (stride > this.points.length) {
+      this.points.set(this.points.slice(3));
+      this.points[this.points.length - 3] = x[0];
+      this.points[this.points.length - 2] = x[1];
+      this.points[this.points.length - 1] = x[2];
+    } else {
+      this.points[stride + 0] = x[0];
+      this.points[stride + 1] = x[1];
+      this.points[stride + 2] = x[2];
+    }
+
+    this.positions.needsUpdate = true;
+
+    this.n += 1
+  }
+}
