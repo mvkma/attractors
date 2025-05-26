@@ -58,12 +58,12 @@ const instances: Spheres[] | Traces[] = []
 const parameters = {
   system: "lorenz",
   colormap: "red",
-  tail: 1000,
+  tail: 1,
   interval: 50,
 };
 
 let colormap = colormaps.get(parameters.colormap)!;
-const count = 5;
+const count = 2000;
 
 function init(count: number, system: string) {
   let odeSystem;
@@ -87,23 +87,24 @@ function init(count: number, system: string) {
   for (let i = 0; i < count; i++) {
     const integrator = new RungeKuttaIntegrator({
       f: odeSystem.func.bind(odeSystem),
-      x0: new Float32Array([1 + i, 2 - i, i * 10]),
+      // x0: new Float32Array([1 + i, 2 - i, i * 10]),
+      x0: new Float32Array([25 - Math.random() * 50, 25 - Math.random() * 50, 25 - Math.random() * 50]),
       t0: 0,
-      dt: 0.01,
+      dt: 0.0001,
       eps: 1e-6,
     });
 
     colormap.mirror = true;
-    const spheres = new Traces({
+    const spheres = new Spheres({
       integrator: integrator,
       colorOptions: {
-        // type: "constant",
-        // color: colormap.sample((i + 0.5) / count),
-        type: "colormap",
-        colormap: colormap,
+        type: "constant",
+        color: colormap.sample((i + 0.5) / count),
+        // type: "colormap",
+        // colormap: colormap,
       },
-      count: 1024,
-      // radius: 0.3,
+      count: parameters.tail,
+      radius: 0.3,
     });
     scene.add(spheres);
     instances.push(spheres);
