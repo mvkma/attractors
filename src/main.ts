@@ -3,11 +3,12 @@ import './style.css'
 import * as THREE from 'three';
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { LorenzSystem, RoesslerSystem } from './systems';
-import { Spheres, Traces } from './visualizers';
+import { PointCloud, Spheres, Traces } from './visualizers';
 import { RungeKuttaIntegrator } from './integration';
 import colormaps from './colormaps';
 import GUI  from 'three/examples/jsm/libs/lil-gui.module.min.js';
 import { Planes } from './planes';
+import { buildOdeFragmentShader, ComputeShader } from './compute-shader';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div id="scene">
@@ -60,10 +61,18 @@ const parameters = {
   colormap: "red",
   tail: 1,
   interval: 50,
+  iterations: 1,
 };
 
+const computeShader = new ComputeShader({
+  width: 256,
+  height: 256,
+  renderer: renderer,
+  fragmentShader: buildOdeFragmentShader(new LorenzSystem())
+})
+
 let colormap = colormaps.get(parameters.colormap)!;
-const count = 2000;
+const count = 0; // 2000;
 
 function init(count: number, system: string) {
   let odeSystem;
@@ -76,10 +85,18 @@ function init(count: number, system: string) {
     return;
   }
 
+  computeShader.setFragmentShader(buildOdeFragmentShader(odeSystem))
+  for (const [k, v] of Object.entries(odeSystem.parameters)) {
+    computeShader.setUniform(k, v)
+  }
+
   const params = odeSystem.parameters;
   for (const k of Object.keys(params)) {
     const controller = gui.add(params, k).onChange(() => {
       odeSystem.parameters = params;
+      for (const [k, v] of Object.entries(odeSystem.parameters)) {
+        computeShader.setUniform(k, v)
+      }
     });
     controllers.push(controller);
   }
@@ -175,7 +192,18 @@ gui.add(parameters, "tail", 1, 1000, 1).onChange((tail) => {
 
 gui.add(parameters, "interval", 0, 500, 10);
 
+gui.add(parameters, "iterations", 1, 500, 1).onChange((iterations) => {
+  computeShader.setUniform("iterations", iterations)
+})
+
 init(count, parameters.system);
+
+const pointCloud = new PointCloud({
+  height: 256,
+  width: 256,
+})
+
+scene.add(pointCloud)
 
 function animate() {
   if (!paused) {
@@ -184,6 +212,10 @@ function animate() {
     }, parameters.interval);
   }
   instances.forEach((instance) => instance.update());
+
+  const activeTexture = computeShader.update()
+  pointCloud.setUniform('positions', activeTexture)
+
   render();
 }
 

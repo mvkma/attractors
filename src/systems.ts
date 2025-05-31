@@ -2,6 +2,7 @@ export type OdeFunction = (_t: number, x: Float32Array, xdot: Float32Array) => v
 
 export interface OdeSystem {
   parameters: any;
+  shaderChunk: () => string;
   func: OdeFunction;
 }
 
@@ -24,6 +25,18 @@ export class LorenzSystem implements OdeSystem {
       "rho": this.rho,
       "beta": this.beta,
     };
+  }
+
+  shaderChunk() {
+    return `
+    uniform float sigma;
+    uniform float rho;
+    uniform float beta;
+
+    vec3 xdot(vec3 x) {
+      return vec3(sigma * (x[1] - x[0]), x[0] * (rho - x[2]) - x[1], x[0] * x[1] - beta * x[2]);
+    }
+    `;
   }
 
   func(_t: number, x: Float32Array, xdot: Float32Array) {
@@ -52,6 +65,18 @@ export class RoesslerSystem implements OdeSystem {
       "b": this.b,
       "c": this.c,
     };
+  }
+
+  shaderChunk() {
+    return `
+    uniform float a;
+    uniform float b;
+    uniform float c;
+
+    vec3 xdot(vec3 x) {
+      return vec3(-x[1] - x[2], x[0] + a * x[1], b + x[2] * (x[0] - c));
+    }
+    `;
   }
 
   func(_t: number, x: Float32Array, xdot: Float32Array) {
