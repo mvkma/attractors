@@ -86,3 +86,34 @@ export class RoesslerSystem implements OdeSystem {
   }
 }
 
+export class ThomasSystem implements OdeSystem {
+  private b: number = 0.5
+
+  constructor() {}
+
+  set parameters(params: any) {
+    this.b = params["b"]
+  }
+
+  get parameters() {
+    return {
+      "b": this.b
+    }
+  }
+
+  shaderChunk() {
+    return `
+    uniform float b;
+
+    vec3 xdot(vec3 x) {
+      return vec3(sin(x[1]) - b * x[0], sin(x[2]) - b * x[1], sin(x[0]) - b * x[2]);
+    }
+    `
+  }
+
+  func(_t: number, x: Float32Array, xdot: Float32Array) {
+    xdot[0] = Math.sin(x[1]) - this.b * x[0]
+    xdot[1] = Math.sin(x[2]) - this.b * x[1]
+    xdot[2] = Math.sin(x[0]) - this.b * x[2]
+  }
+}

@@ -40,22 +40,27 @@ in vec2 vUv;
 
 uniform sampler2D ${U_INPUT_TEXTURE};
 uniform float iterations;
+uniform float stepSize;
 
 out vec4 fragColor;
 
 <ODE_SYSTEM>
 
+vec3 midPoint(vec3 pos, float h) {
+  vec3 posDot = xdot(pos + h / 2.0 * xdot(pos));
+  return pos + h * posDot;
+}
+
 void main() {
   vec3 pos = texture(${U_INPUT_TEXTURE}, vUv).xyz;
-  vec3 posDot = xdot(pos);
 
-  float i = 1.0;
+  float i = 0.0;
   while ((i < iterations) && (i < 100.0)) {
-    pos = pos + 0.001 * posDot;
-    posDot = xdot(pos);
+    pos = midPoint(pos, stepSize);
     i++;
   }
-  fragColor = vec4(pos + 0.001 * posDot, length(posDot));
+
+  fragColor = vec4(pos, length(pos));
 }
 `
 
@@ -92,6 +97,7 @@ export class ComputeShader {
       uniforms: {
         [U_INPUT_TEXTURE]: { value: null },
         iterations: { value: 1 },
+        stepSize: { value: 0.001 },
       }
     })
 

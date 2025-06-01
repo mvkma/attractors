@@ -2,7 +2,7 @@ import './style.css'
 
 import * as THREE from 'three';
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { LorenzSystem, RoesslerSystem } from './systems';
+import { LorenzSystem, RoesslerSystem, ThomasSystem } from './systems';
 import { PointCloud, Spheres, Traces } from './visualizers';
 import { RungeKuttaIntegrator } from './integration';
 import colormaps from './colormaps';
@@ -81,6 +81,8 @@ function init(count: number, system: string) {
     odeSystem = new LorenzSystem();
   } else if (system === "roessler") {
     odeSystem = new RoesslerSystem();
+  } else if (system === "thomas") {
+    odeSystem = new ThomasSystem();
   } else {
     return;
   }
@@ -128,7 +130,7 @@ function init(count: number, system: string) {
   }
 }
 
-gui.add(parameters, "system", ["lorenz", "roessler"]).onChange((system) => {
+gui.add(parameters, "system", ["lorenz", "roessler", "thomas"]).onChange((system) => {
   for (let i = 0; i < count; i++) {
     const sphere = instances.pop();
     if (!sphere) {
