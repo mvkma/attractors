@@ -7,7 +7,6 @@ import { PointCloud, Spheres, Traces } from './visualizers';
 import { RungeKuttaIntegrator } from './integration';
 import colormaps from './colormaps';
 import GUI  from 'three/examples/jsm/libs/lil-gui.module.min.js';
-import { Planes } from './planes';
 import { buildOdeFragmentShader, ComputeShader } from './compute-shader';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
@@ -29,7 +28,6 @@ document.querySelector("#scene")?.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 0, 0);
-controls.update();
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambientLight);
@@ -41,12 +39,11 @@ scene.add(directionalLight);
 
 camera.position.z = -55;
 
-const planes = new Planes({
-  width: 50,
-  height: 50,
-  color: 0x253b56,
-});
-scene.add(planes);
+const origin = new THREE.Vector3(0, 0, 0)
+
+scene.add(new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), origin, 10, 0xffff00))
+scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), origin, 10, 0x00ffff))
+scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), origin, 10, 0xff00ff))
 
 function render() {
   renderer.render(scene, camera);
@@ -232,3 +229,5 @@ window.addEventListener("keydown", (event) => {
     }
   }
 });
+
+controls.update()
