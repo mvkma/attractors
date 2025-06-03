@@ -47,8 +47,8 @@ export class LorenzSystem implements OdeSystem {
 }
 
 export class RoesslerSystem implements OdeSystem {
-  private a: number = 0.2;
-  private b: number = 0.2;
+  private a: number = 0.1;
+  private b: number = 0.1;
   private c: number = 14;
 
   constructor() {}
@@ -87,7 +87,7 @@ export class RoesslerSystem implements OdeSystem {
 }
 
 export class ThomasSystem implements OdeSystem {
-  private b: number = 0.5
+  private b: number = 0.2
 
   constructor() {}
 

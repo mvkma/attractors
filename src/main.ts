@@ -6,7 +6,8 @@ import { LorenzSystem, RoesslerSystem, ThomasSystem } from './systems';
 import { PointCloud, Spheres, Traces } from './visualizers';
 import { RungeKuttaIntegrator } from './integration';
 import colormaps from './colormaps';
-import GUI  from 'three/examples/jsm/libs/lil-gui.module.min.js';
+import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
+import Stats from 'stats-gl';
 import { buildOdeFragmentShader, ComputeShader } from './compute-shader';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
@@ -45,8 +46,13 @@ scene.add(new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), origin, 10, 0xffff00
 scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), origin, 10, 0x00ffff))
 scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), origin, 10, 0xff00ff))
 
+const stats = new Stats({ horizontal: true, trackGPU: true })
+stats.init(renderer)
+document.body.appendChild(stats.dom)
+
 function render() {
   renderer.render(scene, camera);
+  stats.update()
 }
 
 controls.addEventListener("change", render);
@@ -59,6 +65,7 @@ const parameters = {
   tail: 1,
   interval: 50,
   iterations: 1,
+  reset: () => computeShader.reset(),
 };
 
 const computeShader = new ComputeShader({
@@ -142,9 +149,10 @@ gui.add(parameters, "system", ["lorenz", "roessler", "thomas"]).onChange((system
     scene.remove(sphere)
   }
 
-  controllers.forEach((controller) => {
-    controller.destroy();
-  });
+  while (controllers.length > 0) {
+    const c = controllers.pop();
+    c.destroy();
+  }
 
   init(count, system);
 });
@@ -194,6 +202,8 @@ gui.add(parameters, "interval", 0, 500, 10);
 gui.add(parameters, "iterations", 1, 500, 1).onChange((iterations) => {
   computeShader.setUniform("iterations", iterations)
 })
+
+gui.add(parameters, "reset")
 
 init(count, parameters.system);
 

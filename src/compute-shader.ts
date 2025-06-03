@@ -89,11 +89,15 @@ export class ComputeShader {
   private activeTarget: number
   private activeInput: number
 
+  private readonly initializationShader: string
+
   constructor(options: ComputeShaderOptions) {
+    this.initializationShader = options.initializationShader || fragmentShaderRandom
+
     const quadMaterial = new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       vertexShader: options.vertexShader || vertexShaderQuad,
-      fragmentShader: options.initializationShader || fragmentShaderRandom,
+      fragmentShader: this.initializationShader,
       uniforms: {
         [U_INPUT_TEXTURE]: { value: null },
         iterations: { value: 1 },
@@ -154,6 +158,13 @@ export class ComputeShader {
   setFragmentShader(shader: string) {
     this.material.fragmentShader = shader
     this.material.needsUpdate = true
+  }
+
+  reset() {
+    const currentShader = this.material.fragmentShader
+    this.setFragmentShader(this.initializationShader)
+    this.update()
+    this.setFragmentShader(currentShader)
   }
 
   update() {

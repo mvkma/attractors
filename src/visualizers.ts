@@ -187,7 +187,8 @@ void main() {
   gl_PointSize = 1.0;
 
   float alpha = pos.w / 250.0;
-  color = vec3(alpha, 1.0 - alpha, 0.3);
+// color = vec3(alpha, 1.0 - alpha, 0.3);
+color = abs(normalize(pos.xyz));
 }
 `
 
