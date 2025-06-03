@@ -42,9 +42,13 @@ camera.position.z = -55;
 
 const origin = new THREE.Vector3(0, 0, 0)
 
-scene.add(new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), origin, 10, 0xffff00))
-scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), origin, 10, 0x00ffff))
-scene.add(new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), origin, 10, 0xff00ff))
+const arrows = [
+  new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), origin, 10, 0xffff00),
+  new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), origin, 10, 0x00ffff),
+  new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), origin, 10, 0xff00ff),
+]
+
+arrows.forEach((arrow) => scene.add(arrow))
 
 const stats = new Stats({ horizontal: true, trackGPU: true })
 stats.init(renderer)
@@ -66,6 +70,7 @@ const parameters = {
   interval: 50,
   iterations: 1,
   reset: () => computeShader.reset(),
+  showArrows: true,
 };
 
 const computeShader = new ComputeShader({
@@ -204,6 +209,13 @@ gui.add(parameters, "iterations", 1, 500, 1).onChange((iterations) => {
 })
 
 gui.add(parameters, "reset")
+
+gui.add(parameters, "showArrows").onChange((showArrows) => {
+  arrows.forEach((arrow) => arrow.visible = showArrows)
+  if (paused) {
+    render()
+  }
+})
 
 init(count, parameters.system);
 
