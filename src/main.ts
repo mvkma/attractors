@@ -80,33 +80,36 @@ const computeShader = new ComputeShader({
 let colormap = colormaps.get(parameters.colormap)!;
 
 function init(system: string) {
-  let odeSystem;
+    let odeSystem;
 
-  if (system === "lorenz") {
-    odeSystem = new LorenzSystem();
-  } else if (system === "roessler") {
-    odeSystem = new RoesslerSystem();
-  } else if (system === "thomas") {
-    odeSystem = new ThomasSystem();
-  } else {
-    return;
-  }
+    if (system === "lorenz") {
+        odeSystem = new LorenzSystem();
+    } else if (system === "roessler") {
+        odeSystem = new RoesslerSystem();
+    } else if (system === "thomas") {
+        odeSystem = new ThomasSystem();
+    } else {
+        return;
+    }
 
-  computeShader.setFragmentShader(buildOdeFragmentShader(odeSystem))
-  for (const [k, v] of Object.entries(odeSystem.parameters)) {
-    computeShader.setUniform(k, v)
-  }
+    computeShader.setFragmentShader(buildOdeFragmentShader(odeSystem))
 
-  const params = odeSystem.parameters;
-  for (const k of Object.keys(params)) {
-    const controller = gui.add(params, k).onChange(() => {
-      odeSystem.parameters = params;
-      for (const [k, v] of Object.entries(odeSystem.parameters)) {
+    const systemParams = odeSystem.getParameters() as { [k: string]: number }
+
+    for (const [k, v] of Object.entries(systemParams)) {
         computeShader.setUniform(k, v)
-      }
-    });
-    controllers.push(controller);
-  }
+
+        const controller = gui.add(systemParams, k).onChange(() => {
+            odeSystem.setParameters(systemParams)
+
+            for (const [k, v] of Object.entries(odeSystem.getParameters())) {
+                computeShader.setUniform(k, v)
+            }
+
+        });
+
+        controllers.push(controller);
+    }
 }
 
 gui.add(parameters, "system", ["lorenz", "roessler", "thomas"]).onChange((system) => {
