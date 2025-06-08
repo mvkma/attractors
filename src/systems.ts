@@ -136,3 +136,9 @@ export class ThomasSystem implements OdeSystem {
         xdot[2] = Math.sin(x[0]) - this.b * x[2]
     }
 }
+
+export const systems = {
+    "lorenz": () => new LorenzSystem(),
+    "roessler": () => new RoesslerSystem(),
+    "thomas": () => new ThomasSystem(),
+}
