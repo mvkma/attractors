@@ -79,57 +79,28 @@ export interface ComputeShaderOptions {
   initializationShader?: string
 }
 
-export class ComputeShader {
-  private readonly renderTargets: THREE.WebGLRenderTarget[]
-  private readonly renderer: THREE.WebGLRenderer
-  private readonly material: THREE.ShaderMaterial
-  private readonly scene: THREE.Scene
-  private readonly camera: THREE.Camera
+export interface ComputeShaderUpdateOptions {
+    uniforms: { [k: string]: THREE.IUniform }
+    reset?: boolean
+    fragmentShader?: string
+}
 
-  private activeTarget: number
-  private activeInput: number
+function buildQuadGeometry() {
+    const quadVertices = new Float32Array([
+        -1, -1, 0, 1, -1, 0, 1, 1, 0, -1, -1, 0, 1, 1, 0, -1, 1, 0
+    ])
+    const quadUvs = new Float32Array([
+        0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0
+    ])
 
-  private readonly initializationShader: string
+    const quadGeometry = new THREE.BufferGeometry()
+    quadGeometry.setAttribute('position', new THREE.BufferAttribute(quadVertices, 3))
+    quadGeometry.setAttribute('uv', new THREE.BufferAttribute(quadUvs, 2))
 
-  constructor(options: ComputeShaderOptions) {
-    this.initializationShader = options.initializationShader || fragmentShaderRandom
+    return quadGeometry
+}
 
-    const quadMaterial = new THREE.ShaderMaterial({
-      glslVersion: THREE.GLSL3,
-      vertexShader: options.vertexShader || vertexShaderQuad,
-      fragmentShader: this.initializationShader,
-      uniforms: {
-        [U_INPUT_TEXTURE]: { value: null },
-        iterations: { value: 1 },
-        stepSize: { value: 0.001 },
-      }
-    })
-
-    const quadGeometry = this.buildQuadGeometry()
-    const quadMesh = new THREE.Mesh(quadGeometry, quadMaterial)
-
-    this.scene = new THREE.Scene()
-    this.camera = new THREE.OrthographicCamera(-1, 1, 1,-1, 0, 1);
-    this.material = quadMaterial
-    this.renderer = options.renderer
-    this.activeTarget = 0
-    this.activeInput = 1
-    this.renderTargets = []
-    for (let i =0; i < 2; i++) {
-      const target = this.buildRenderTarget(options.width, options.height)
-      this.renderTargets.push(target)
-    }
-
-    this.scene.add(quadMesh)
-
-    // render with initialization shader
-    this.update()
-
-    // set fragment shader and recompile
-    this.setFragmentShader(options.fragmentShader)
-  }
-
-  private buildRenderTarget(width: number, height: number) {
+function buildRenderTarget(width: number, height: number) {
     const renderTarget = new THREE.WebGLRenderTarget(width, height)
 
     renderTarget.texture.format = THREE.RGBAFormat
@@ -138,53 +109,84 @@ export class ComputeShader {
     renderTarget.texture.type = THREE.FloatType
 
     return renderTarget
-  }
-
-  private buildQuadGeometry() {
-    const quadVertices = new Float32Array([
-      -1, -1, 0, 1, -1, 0, 1, 1, 0, -1, -1, 0, 1, 1, 0, -1, 1, 0
-    ])
-    const quadUvs = new Float32Array([
-      0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0
-    ])
-
-    const quadGeometry = new THREE.BufferGeometry()
-    quadGeometry.setAttribute('position', new THREE.BufferAttribute(quadVertices, 3))
-    quadGeometry.setAttribute('uv', new THREE.BufferAttribute(quadUvs, 2))
-
-    return quadGeometry
-  }
-
-  setFragmentShader(shader: string) {
-    this.material.fragmentShader = shader
-    this.material.needsUpdate = true
-  }
-
-  reset() {
-    const currentShader = this.material.fragmentShader
-    this.setFragmentShader(this.initializationShader)
-    this.update()
-    this.setFragmentShader(currentShader)
-  }
-
-  update() {
-    const oldTarget = this.renderer.getRenderTarget()
-    const target = this.renderTargets[this.activeTarget]
-    const input = this.renderTargets[this.activeInput]
-
-    this.material.uniforms[U_INPUT_TEXTURE].value = input.texture
-
-    this.renderer.setRenderTarget(target)
-    this.renderer.render(this.scene, this.camera)
-    this.renderer.setRenderTarget(oldTarget)
-
-    this.activeTarget = 1 - this.activeTarget
-    this.activeInput = 1 - this.activeInput
-
-    return target.texture
-  }
-
-  setUniform<TValue = any>(key: string, value: TValue) {
-    this.material.uniforms[key] = { value: value }
-  }
 }
+
+
+export function* buildComputeShader(options: ComputeShaderOptions): Generator<THREE.Texture, void, ComputeShaderUpdateOptions> {
+    const initializationShader = options.initializationShader || fragmentShaderRandom
+
+    const scene = new THREE.Scene()
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const renderer = options.renderer
+
+    const quadMaterial = new THREE.ShaderMaterial({
+        glslVersion: THREE.GLSL3,
+        vertexShader: options.vertexShader || vertexShaderQuad,
+        fragmentShader: initializationShader,
+        uniforms: {
+            [U_INPUT_TEXTURE]: { value: null },
+            iterations: { value: 1 },
+            stepSize: { value: 0.001 },
+        }
+    })
+
+    const quadGeometry = buildQuadGeometry()
+    const quadMesh = new THREE.Mesh(quadGeometry, quadMaterial)
+
+    scene.add(quadMesh)
+
+    const renderTargets: THREE.WebGLRenderTarget[] = []
+    for (let i =0; i < 2; i++) {
+      const target = buildRenderTarget(options.width, options.height)
+      renderTargets.push(target)
+    }
+
+    let activeTarget = 0
+    let activeInput = 1
+
+    const render = () => {
+        console.log("render")
+        const oldTarget = renderer.getRenderTarget()
+        const target = renderTargets[activeTarget]
+        const input = renderTargets[activeInput]
+
+        quadMaterial.uniforms[U_INPUT_TEXTURE].value = input.texture
+
+        renderer.setRenderTarget(target)
+        renderer.render(scene, camera)
+        renderer.setRenderTarget(oldTarget)
+
+        activeTarget = 1 - activeTarget
+        activeInput = 1 - activeInput
+
+        return target.texture
+    }
+
+    const setFragmentShader = (shader: string) => {
+        quadMaterial.fragmentShader = shader
+        quadMaterial.needsUpdate = true
+    }
+
+    const restart = () => {
+        const currentShader = quadMaterial.fragmentShader
+        setFragmentShader(initializationShader)
+        render()
+        setFragmentShader(currentShader)
+    }
+
+    while (true) {
+        const { uniforms, reset, fragmentShader } = yield render()
+
+        if (reset) {
+            restart()
+            continue
+        }
+
+        if (fragmentShader) {
+            setFragmentShader(fragmentShader)
+        }
+
+        Object.assign(quadMaterial.uniforms, uniforms)
+    }
+}
+

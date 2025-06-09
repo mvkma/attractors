@@ -7,7 +7,7 @@ import { PointCloud } from './visualizers';
 import colormaps from './colormaps';
 import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
 import Stats from 'stats-gl';
-import { buildOdeFragmentShader, ComputeShader } from './compute-shader';
+import { buildComputeShader, buildOdeFragmentShader, ComputeShaderUpdateOptions } from './compute-shader';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div id="scene">
@@ -66,34 +66,42 @@ const parameters = {
     colormap: "red",
     interval: 50,
     iterations: 1,
-    reset: () => computeShader.reset(),
+    reset: () => computeShaderUpdateOptions.reset = true,
     showArrows: true,
 };
 
-const computeShader = new ComputeShader({
+const computeShaderUpdateOptions: ComputeShaderUpdateOptions = {
+    fragmentShader: undefined,
+    reset: false,
+    uniforms: {}
+}
+
+const computeShader = buildComputeShader({
     width: 256,
     height: 256,
     renderer: renderer,
     fragmentShader: buildOdeFragmentShader(systems["lorenz"]())
 })
 
+computeShader.next()
+
 let colormap = colormaps.get(parameters.colormap)!;
 
 function init(system: keyof typeof systems) {
     const odeSystem = systems[system]()
 
-    computeShader.setFragmentShader(buildOdeFragmentShader(odeSystem))
+    computeShaderUpdateOptions["fragmentShader"] = buildOdeFragmentShader(odeSystem)
 
     const systemParams = odeSystem.getParameters() as { [k: string]: number }
 
     for (const [k, v] of Object.entries(systemParams)) {
-        computeShader.setUniform(k, v)
+        computeShaderUpdateOptions.uniforms[k] = { value: v }
 
         const controller = gui.add(systemParams, k).onChange(() => {
             odeSystem.setParameters(systemParams)
 
             for (const [k, v] of Object.entries(odeSystem.getParameters())) {
-                computeShader.setUniform(k, v)
+                computeShaderUpdateOptions.uniforms[k] = { value: v }
             }
 
         });
@@ -123,7 +131,7 @@ gui.add(parameters, "colormap", [...colormaps.keys()]).onChange((key) => {
 gui.add(parameters, "interval", 0, 500, 10);
 
 gui.add(parameters, "iterations", 1, 500, 1).onChange((iterations) => {
-    computeShader.setUniform("iterations", iterations)
+    computeShaderUpdateOptions.uniforms["iterations"] = { value: iterations }
 })
 
 gui.add(parameters, "reset")
@@ -151,8 +159,10 @@ function animate() {
         }, parameters.interval);
     }
 
-    const activeTexture = computeShader.update()
-    pointCloud.setUniform('positions', activeTexture)
+    const activeTexture = computeShader.next(computeShaderUpdateOptions)
+    computeShaderUpdateOptions.reset = false
+    computeShaderUpdateOptions.fragmentShader = undefined
+    pointCloud.setUniform('positions', activeTexture.value)
 
     render();
 }
