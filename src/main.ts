@@ -106,7 +106,7 @@ function init(system: keyof typeof systems) {
         odeSystem.setParameters(systemParams)
 
         for (const [k, v] of Object.entries(odeSystem.getParameters())) {
-            updateOptions.uniforms[k] = m.constant({ a: v })
+            updateOptions.uniforms[k] = m.ops.add(v, m.ops.mul(v / 10, m.funcs.sin(m.now)))
         }
     }
 
@@ -115,11 +115,12 @@ function init(system: keyof typeof systems) {
         controllers.pop().destroy();
     }
 
-    for (const [k, v] of Object.entries(systemParams)) {
-        updateOptions.uniforms[k] = m.constant({ a: v })
+    for (const k of Object.keys(systemParams)) {
         const controller = gui.add(systemParams, k).onChange(updateParams);
         controllers.push(controller);
     }
+
+    updateParams()
 }
 
 gui.add(parameters, "system", Object.keys(systems)).onChange((system) => {
@@ -138,9 +139,8 @@ gui.add(parameters, "colormap", [...colormaps.keys()]).onChange((key) => {
 gui.add(parameters, "interval", 0, 500, 10);
 
 gui.add(parameters, "iterations", 1, 500, 1).onChange((iterations) => {
-    const sin = m.funcs.sin(m.ops.mul(1, m.now))
-    const it2 = iterations / 2
-    updateOptions.uniforms["iterations"] = m.ops.add(m.ops.mul(sin, it2), it2)
+    const sin = m.funcs.sin(m.ops.mul(1 / 10, m.now))
+    updateOptions.uniforms["iterations"] = m.ops.add(m.ops.mul(sin, iterations / 2), iterations / 3)
 })
 
 gui.add(parameters, "reset")
