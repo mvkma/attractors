@@ -61,6 +61,7 @@ function render() {
 controls.addEventListener("change", render);
 
 const controllers: any[] = [];
+
 const parameters = {
     system: "lorenz",
     colormap: "red",
@@ -94,28 +95,27 @@ function init(system: keyof typeof systems) {
 
     const systemParams = odeSystem.getParameters() as { [k: string]: number }
 
+    const updateParams = () => {
+        odeSystem.setParameters(systemParams)
+
+        for (const [k, v] of Object.entries(odeSystem.getParameters())) {
+            computeShaderUpdateOptions.uniforms[k] = { value: v }
+        }
+    }
+
+    // remove old controllers
+    while (controllers.length > 0) {
+        controllers.pop().destroy();
+    }
+
     for (const [k, v] of Object.entries(systemParams)) {
         computeShaderUpdateOptions.uniforms[k] = { value: v }
-
-        const controller = gui.add(systemParams, k).onChange(() => {
-            odeSystem.setParameters(systemParams)
-
-            for (const [k, v] of Object.entries(odeSystem.getParameters())) {
-                computeShaderUpdateOptions.uniforms[k] = { value: v }
-            }
-
-        });
-
+        const controller = gui.add(systemParams, k).onChange(updateParams);
         controllers.push(controller);
     }
 }
 
 gui.add(parameters, "system", Object.keys(systems)).onChange((system) => {
-    while (controllers.length > 0) {
-        const c = controllers.pop();
-        c.destroy();
-    }
-
     init(system as keyof typeof systems);
 });
 

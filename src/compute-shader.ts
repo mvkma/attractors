@@ -145,7 +145,6 @@ export function* buildComputeShader(options: ComputeShaderOptions): Generator<TH
     let activeInput = 1
 
     const render = () => {
-        console.log("render")
         const oldTarget = renderer.getRenderTarget()
         const target = renderTargets[activeTarget]
         const input = renderTargets[activeInput]
