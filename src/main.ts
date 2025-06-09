@@ -165,6 +165,8 @@ const computeShaderUpdateOptions: ComputeShaderUpdateOptions = {
     uniforms: {}
 }
 
+const rot = m.funcs.sin(m.ops.mul(m.now, 2))
+
 function animate() {
     if (!paused) {
         setTimeout(() => {
@@ -173,6 +175,8 @@ function animate() {
     }
 
     m.tick()
+
+    pointCloud.rotation.x += (rot.eval() + 1) / 1000
 
     computeShaderUpdateOptions.reset = updateOptions.reset
     computeShaderUpdateOptions.fragmentShader = updateOptions.fragmentShader
