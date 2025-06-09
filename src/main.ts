@@ -138,11 +138,9 @@ gui.add(parameters, "colormap", [...colormaps.keys()]).onChange((key) => {
 gui.add(parameters, "interval", 0, 500, 10);
 
 gui.add(parameters, "iterations", 1, 500, 1).onChange((iterations) => {
-    const freq = m.constant({ a: 1 })
-    const phi = m.constant({ a: 0 })
-    const sin = m.sin({ freq, phi })
-    const it2 = m.constant({ a: iterations / 2 })
-    updateOptions.uniforms["iterations"] = m.add({ a: m.mul({ a: sin, b: it2 }), b: it2 })
+    const sin = m.funcs.sin(m.ops.mul(1, m.now))
+    const it2 = iterations / 2
+    updateOptions.uniforms["iterations"] = m.ops.add(m.ops.mul(sin, it2), it2)
 })
 
 gui.add(parameters, "reset")

@@ -2,6 +2,8 @@ export interface HasEval {
     eval: (t?: number) => number
 }
 
+export type ModParam = HasEval | number
+
 export function mods({ t, dt }: { t: number, dt: number }) {
     let time = t
     let step = dt
@@ -10,34 +12,67 @@ export function mods({ t, dt }: { t: number, dt: number }) {
     const setTime = (t: number) => time = t
     const tick = () => time += step
 
-    const constant = function({ a }: { a: number }): HasEval {
+    const now: HasEval = {
+        eval: (_t?: number) => t ? t : time
+    }
+
+    const constant = function ({ a }: { a: number }): HasEval {
         return {
             eval: (_t?: number) => a
         }
     }
 
-    const linear = function({ a, b }: { a: HasEval, b: HasEval }): HasEval {
-        return {
-            eval: (t?: number) => t ? a.eval(t) * t + b.eval(t) : a.eval() * time + b.eval()
-        }
+    const wrap = (x: ModParam) => {
+        return typeof (x) === 'number' ? constant({ a: x }) : x
     }
 
-    const sin = function({ freq, phi }: { freq: HasEval, phi: HasEval }): HasEval {
-        return {
-            eval: (t?: number) => t ? Math.sin(freq.eval() * t + phi.eval()) : Math.sin(freq.eval() * time + phi.eval())
-        }
+    const binaryOps = {
+        'add': (a: number, b: number) => a + b,
+        'sub': (a: number, b: number) => a - b,
+        'mul': (a: number, b: number) => a * b,
+        'div': (a: number, b: number) => a / b,
+        'min': (a: number, b: number) => Math.min(a, b),
+        'max': (a: number, b: number) => Math.max(a, b),
+        'pow': (a: number, b: number) => Math.pow(a, b),
     }
 
-    const mul = function({ a, b }: { a: HasEval, b: HasEval }): HasEval {
-        return {
-            eval: (t?: number) => t ? a.eval(t) * b.eval(t) : a.eval(time) * b.eval(time)
-        }
+    const unaryOps = {
+        'sin': Math.sin,
+        'cos': Math.cos,
+        'exp': Math.exp,
+        'log': Math.log,
+        'abs': Math.abs,
+        'floor': Math.floor,
+        'ceil': Math.ceil,
+        'sinh': Math.sinh,
+        'cosh': Math.cosh,
     }
 
-    const add = function({ a, b }: { a: HasEval, b: HasEval }): HasEval {
-        return {
-            eval: (t?: number) => t ? a.eval(t) + b.eval(t) : a.eval(time) + b.eval(time)
+    type BinaryFunc = (a: ModParam, b: ModParam) => HasEval
+    type UnaryFunc = (a: ModParam) => HasEval
+
+    const ops: { [k: string]: BinaryFunc } = {}
+    const funcs: { [k: string]: UnaryFunc } = {}
+
+    for (const [k, func] of Object.entries(binaryOps)) {
+        const f: BinaryFunc = (a, b) => {
+            const aw = wrap(a)
+            const bw = wrap(b)
+            return {
+                eval: (_t?: number) => func(aw.eval(), bw.eval())
+            }
         }
+        ops[k] = f
+    }
+
+    for (const [k, func] of Object.entries(unaryOps)) {
+        const f: UnaryFunc = (a) => {
+            const aw = wrap(a)
+            return {
+                eval: (_t?: number) => func(aw.eval())
+            }
+        }
+        funcs[k] = f
     }
 
     return {
@@ -45,10 +80,9 @@ export function mods({ t, dt }: { t: number, dt: number }) {
         setTime,
         tick,
         constant,
-        linear,
-        sin,
-        mul,
-        add,
+        now,
+        funcs: funcs as { [k in keyof typeof unaryOps]: UnaryFunc },
+        ops: ops as { [k in keyof typeof binaryOps]: BinaryFunc },
     }
 }
 
