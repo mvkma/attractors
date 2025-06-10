@@ -9,6 +9,7 @@ import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
 import Stats from 'stats-gl';
 import { buildComputeShader, buildOdeFragmentShader, ComputeShaderUpdateOptions } from './compute-shader';
 import { HasEval, mods } from './modulations'
+import { box } from './nodes';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div id="scene">
@@ -207,3 +208,12 @@ window.addEventListener("keydown", (event) => {
 
 controls.update()
 
+const arena = document.createElement('div')
+arena.classList.add('arena')
+document.body.appendChild(arena)
+
+const box1 = box('box 1')
+const box2 = box('box 2')
+
+arena.appendChild(box1)
+arena.appendChild(box2)

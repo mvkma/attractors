@@ -36,3 +36,42 @@ a {
     color: var(--link-color);
 }
 
+.arena {
+    background-color: grey;
+    min-height: 300px;
+    width: 100%;
+    position: relative;
+}
+
+.draggable-box {
+    width: 200px;
+    height: 100px;
+    border: 1px solid red;
+    background-color: darkblue;
+    margin: 5px;
+    position: absolute;
+    display: flex;
+    align-items: center;
+
+    .connector {
+        border: 4px dotted green;
+        background-color: blue;
+    }
+
+    .active {
+        border: 4px dotted red;
+    }
+
+    .connected {
+        background-color: orange;
+    }
+
+    .label {
+        width: 100%;
+    }
+
+    span {
+        text-align: center;
+        margin: 2px;
+    }
+}
