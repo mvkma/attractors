@@ -80,6 +80,86 @@ function* connectHandler() {
 
 const onClick = wrap(connectHandler)
 
+type ParameterType = 'constant' | 'dynamic'
+
+interface ConstantParameter {
+    type: 'constant'
+    name: string
+    value: () => number
+    min?: number
+    max?: number
+    step?: number
+}
+
+interface DynamicParameter {
+    type: 'dynamic'
+    name: string
+    value: () => number
+    parent: NewNode
+}
+
+type Parameter = ConstantParameter | DynamicParameter
+
+interface NewNode {
+    name: string
+    value: number
+    update: () => void
+    parameters: { [k: string]: Parameter }
+}
+
+function newConnect(parent: NewNode, other: NewNode, k: string) {
+    const oldParam = other.parameters[k]
+
+    const newParam: Parameter = {
+        type: 'dynamic',
+        name: oldParam.name,
+        value: () => {
+            parent.update()
+            return parent.value
+        },
+        parent: parent,
+    }
+
+    other.parameters[k] = newParam
+    other.update()
+}
+
+function constNode(name: string, value: number): NewNode {
+    const node: NewNode = {
+        name: name,
+        value: value,
+        update: () => {},
+        parameters: {}
+    }
+
+    return node
+}
+
+function additionNode(name: string): NewNode {
+    const a: Parameter = {
+        type: 'constant',
+        name: 'a',
+        value: () => 0
+    }
+
+    const b: Parameter = {
+        type: 'constant',
+        name: 'b',
+        value: () => 0
+    }
+
+    const node: NewNode = {
+        name: name,
+        value: 0,
+        update() {
+            this.value = this.parameters['a'].value() + this.parameters['b'].value()
+        },
+        parameters: { a: a, b: b }
+    }
+
+    return node
+}
+
 export function box(title: string) {
     const container = document.createElement('div')
     container.classList.add('draggable-box')
