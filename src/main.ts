@@ -9,7 +9,7 @@ import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
 import Stats from 'stats-gl';
 import { buildComputeShader, buildOdeFragmentShader, ComputeShaderUpdateOptions } from './compute-shader';
 import { HasEval, mods } from './modulations'
-import { box } from './nodes';
+import { binaryNode, box, constNode, renderNode, unaryNode } from './nodes';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div id="scene">
@@ -212,8 +212,22 @@ const arena = document.createElement('div')
 arena.classList.add('arena')
 document.body.appendChild(arena)
 
-const box1 = box('box 1')
-const box2 = box('box 2')
 
-arena.appendChild(box1)
-arena.appendChild(box2)
+const time = constNode('time', m.now)
+const zero = constNode('zero', m.constant({ a: 0 }))
+const a = constNode('a', m.constant({ a: 0 }))
+const b = constNode('b', m.constant({ a: 1 }))
+const sin = unaryNode('sin', m.funcs.sin, zero)
+const add = binaryNode('add', m.ops.add, zero, zero)
+
+const timeBox = renderNode(time)
+const aBox = renderNode(a)
+const bBox = renderNode(b)
+const sinBox = renderNode(sin)
+const addBox = renderNode(add)
+
+arena.appendChild(timeBox)
+arena.appendChild(aBox)
+arena.appendChild(bBox)
+arena.appendChild(sinBox)
+arena.appendChild(addBox)

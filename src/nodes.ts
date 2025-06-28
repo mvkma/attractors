@@ -1,3 +1,5 @@
+import { HasEval, BinaryFunc, ModParam, mods, UnaryFunc } from "./modulations"
+
 function wrap(f: () => Generator<undefined, any, any>) {
     const gen = f()
     gen.next()
@@ -80,96 +82,19 @@ function* connectHandler() {
 
 const onClick = wrap(connectHandler)
 
-type ParameterType = 'constant' | 'dynamic'
-
-interface ConstantParameter {
-    type: 'constant'
-    name: string
-    value: () => number
-    min?: number
-    max?: number
-    step?: number
-}
-
-interface DynamicParameter {
-    type: 'dynamic'
-    name: string
-    value: () => number
-    parent: NewNode
-}
-
-type Parameter = ConstantParameter | DynamicParameter
-
-interface NewNode {
-    name: string
-    value: number
-    update: () => void
-    parameters: { [k: string]: Parameter }
-}
-
-function newConnect(parent: NewNode, other: NewNode, k: string) {
-    const oldParam = other.parameters[k]
-
-    const newParam: Parameter = {
-        type: 'dynamic',
-        name: oldParam.name,
-        value: () => {
-            parent.update()
-            return parent.value
-        },
-        parent: parent,
-    }
-
-    other.parameters[k] = newParam
-    other.update()
-}
-
-function constNode(name: string, value: number): NewNode {
-    const node: NewNode = {
-        name: name,
-        value: value,
-        update: () => {},
-        parameters: {}
-    }
-
-    return node
-}
-
-function additionNode(name: string): NewNode {
-    const a: Parameter = {
-        type: 'constant',
-        name: 'a',
-        value: () => 0
-    }
-
-    const b: Parameter = {
-        type: 'constant',
-        name: 'b',
-        value: () => 0
-    }
-
-    const node: NewNode = {
-        name: name,
-        value: 0,
-        update() {
-            this.value = this.parameters['a'].value() + this.parameters['b'].value()
-        },
-        parameters: { a: a, b: b }
-    }
-
-    return node
-}
-
-export function box(title: string) {
+export function box(title: string, n: number = 0) {
     const container = document.createElement('div')
     container.classList.add('draggable-box')
     container.draggable = true
 
-    const input = document.createElement('span')
-    input.classList.add('connector')
-    input.classList.add('input')
-    input.textContent = 'in'
-    input.addEventListener('click', onClick)
+    for (let i = 0; i < n; i++) {
+        const input = document.createElement('span')
+        input.classList.add('connector')
+        input.classList.add('input')
+        input.textContent = 'in'
+        input.addEventListener('click', onClick)
+        container.appendChild(input)
+    }
 
     const output = document.createElement('span')
     output.classList.add('connector')
@@ -181,13 +106,91 @@ export function box(title: string) {
     label.classList.add('label')
     label.textContent = title
 
-    container.appendChild(input)
     container.appendChild(label)
     container.appendChild(output)
 
     container.addEventListener('dragstart', onDrag)
     container.addEventListener('drag', onDrag)
     container.addEventListener('dragend', onDrag)
+
+    return container
+}
+
+///////////////////////////
+
+export interface Node {
+    name: string
+    value: HasEval
+    update: () => void
+    parameters: { [k: string]: Node }
+}
+
+export function connect(parent: Node, other: Node, k: string) {
+    other.parameters[k] = parent
+    other.update()
+}
+
+export function disconnect(other: Node, k: string) {
+    const oldParam = other.parameters[k]
+    const newParam = constNode(oldParam.name, oldParam.value)
+    other.parameters[k] = newParam
+    other.update()
+}
+
+export function constNode(name: string, value: HasEval): Node {
+    const node: Node = {
+        name: name,
+        value: value,
+        update: () => {},
+        parameters: {}
+    }
+
+    return node
+}
+
+export function unaryNode(name: string, func: UnaryFunc, x: Node) {
+    const node: Node = {
+        name: name,
+        value: func(x.value),
+        update() {
+            this.parameters['x'].update()
+            this.value = func(this.parameters['x'].value)
+        },
+        parameters: { x: x }
+    }
+
+    return node
+}
+
+export function binaryNode(name: string, func: BinaryFunc, a: Node, b: Node) {
+    const node: Node = {
+        name: name,
+        value: func(a.value, b.value),
+        update() {
+            this.parameters['a'].update()
+            this.parameters['b'].update()
+            this.value = func(this.parameters['a'].value, this.parameters['b'].value)
+        },
+        parameters: { a: a, b: b }
+    }
+
+    return node
+}
+
+export function printTree(node: Node, level: number = 0) {
+    const s = ''.padStart(level)
+    console.log(s + `node: ${node.name}, value: ${node.value.eval()}`)
+    for (const [k, param] of Object.entries(node.parameters)) {
+        console.log(s + `- ${k}:`)
+        printTree(param, level + 2)
+    }
+}
+
+//////////////
+
+export function renderNode(node: Node) {
+    const n = Object.keys(node.parameters).length
+    const container = box(node.name, n)
 
     return container
 }

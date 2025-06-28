@@ -3,6 +3,8 @@ export interface HasEval {
 }
 
 export type ModParam = HasEval | number
+export type BinaryFunc = (a: ModParam, b: ModParam) => HasEval
+export type UnaryFunc = (a: ModParam) => HasEval
 
 export function mods({ t, dt }: { t: number, dt: number }) {
     let time = t
@@ -47,9 +49,6 @@ export function mods({ t, dt }: { t: number, dt: number }) {
         'sinh': Math.sinh,
         'cosh': Math.cosh,
     }
-
-    type BinaryFunc = (a: ModParam, b: ModParam) => HasEval
-    type UnaryFunc = (a: ModParam) => HasEval
 
     const ops: { [k: string]: BinaryFunc } = {}
     const funcs: { [k: string]: UnaryFunc } = {}
