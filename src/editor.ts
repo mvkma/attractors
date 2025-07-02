@@ -28,22 +28,26 @@ self.MonacoEnvironment = {
 const modelUri = monaco.Uri.parse(window.location.href + "mod.json")
 const model = monaco.editor.createModel("{}", "json", modelUri)
 
+type UnaryFunction = keyof ReturnType<typeof mods>['funcs']
+
 interface UnaryNode {
-    f: "sin" | "cos",
+    f: UnaryFunction
     x: Node
 }
 
+type BinaryFunction = keyof ReturnType<typeof mods>['ops']
+
 interface BinaryNode {
-    f: "add" | "sub"
+    f: BinaryFunction
     x: Node
     y: Node
 }
 
 type TimeNode = 'time'
 
-type Node = UnaryNode | BinaryNode | TimeNode | number
+export type Node = UnaryNode | BinaryNode | TimeNode | number
 
-function buildModParam(m: ReturnType<typeof mods>, node: Node): HasEval {
+export function buildModParam(m: ReturnType<typeof mods>, node: Node): HasEval {
     if (node === 'time') {
         return m.now
     }
@@ -58,6 +62,8 @@ function buildModParam(m: ReturnType<typeof mods>, node: Node): HasEval {
         return m.funcs[node.f](buildModParam(m, node.x))
     }
 }
+
+const m = mods({ t: 0, dt: 0.01})
 
 monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
     validate: true,
@@ -81,7 +87,7 @@ monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
                     type: "object",
                     properties: {
                         "f": {
-                            enum: [ "sin", "cos" ]
+                            enum: Object.keys(m.funcs)
                         },
                         "x": { $ref: "#/$defs/Node" }
                     },
@@ -92,12 +98,12 @@ monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
                     type: "object",
                     properties: {
                         "f": {
-                            enum: [ "add", "sub", "mul", "div" ],
+                            enum: Object.keys(m.ops)
                         },
                         "x": { $ref: "#/$defs/Node" },
                         "y": { $ref: "#/$defs/Node" },
                     },
-                    required: [ "f", "x", "y" ],
+                    required: ["f", "x", "y"],
                     additionalProperties: false
                 },
                 "TimeNode": { "const": "time" },
@@ -106,10 +112,7 @@ monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
     }]
 })
 
-export function newEditor() {
-    const container = document.createElement('div')
-    container.classList.add('arena')
-    document.body.appendChild(container)
+export function newEditor(container: HTMLElement, callback: (json: string) => void) {
 
     const editor = monaco.editor.create(container, {
         model: model,
@@ -122,35 +125,20 @@ export function newEditor() {
 
     const setParams = (newParams: { [k: string]: Node }) => {
         model.setValue(JSON.stringify(newParams, undefined, 2))
-
-    }
-
-    const getParams = (m: ReturnType<typeof mods>) => {
-        const markers = monaco.editor.getModelMarkers({ owner: 'json' })
-        if (markers.length > 0) {
-            return undefined
-        }
-
-        const json = JSON.parse(model.getValue()) as { [k: string]: Node }
-        const params: { [k: string]: HasEval } = {}
-
-        for (const [key, node] of Object.entries(json)) {
-            params[key] = buildModParam(m, node)
-        }
-
-        return params
     }
 
     editor.addCommand(
         monaco.KeyCode.Tab,
         () => {
-            console.log(monaco.editor.getModelMarkers({ owner: 'json' }))
-            console.log(monaco.editor.tokenize(model.getValue(), 'json'))
+            const markers = monaco.editor.getModelMarkers({ owner: 'json' })
+            if (markers.length > 0) {
+                return undefined
+            }
+            callback(model.getValue())
         }
     )
 
     return {
-        setParams,
-        getParams,
+        setParams
     }
 }

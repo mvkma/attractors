@@ -9,7 +9,7 @@ import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
 import Stats from 'stats-gl';
 import { buildComputeShader, buildOdeFragmentShader, ComputeShaderUpdateOptions } from './compute-shader';
 import { HasEval, mods } from './modulations'
-import { newEditor } from './editor';
+import { buildModParam, newEditor, type Node } from './editor';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div id="scene">
@@ -62,8 +62,6 @@ function render() {
 
 controls.addEventListener("change", render);
 
-const controllers: any[] = [];
-
 const parameters = {
     system: "lorenz",
     colormap: "red",
@@ -96,7 +94,19 @@ computeShader.next()
 
 let colormap = colormaps.get(parameters.colormap)!;
 
-const { setParams, getParams } = newEditor()
+const container = document.createElement('div')
+container.classList.add('arena')
+document.body.appendChild(container)
+
+function updateUniforms(text: string) {
+    const json = JSON.parse(text) as { [k: string]: Node }
+
+    for (const [key, node] of Object.entries(json)) {
+        updateOptions.uniforms[key] = buildModParam(m, node)
+    }
+}
+
+const editor = newEditor(container, updateUniforms)
 
 function init(system: keyof typeof systems) {
     const odeSystem = systems[system]()
@@ -104,37 +114,9 @@ function init(system: keyof typeof systems) {
     updateOptions["fragmentShader"] = buildOdeFragmentShader(odeSystem)
 
     const systemParams = odeSystem.getParameters() as { [k: string]: number }
-    setParams(systemParams)
+    editor.setParams(systemParams)
 
-    const updateParams = () => {
-        odeSystem.setParameters(systemParams)
-
-        // for (const [k, v] of Object.entries(odeSystem.getParameters())) {
-        //     updateOptions.uniforms[k] = m.ops.add(v, m.ops.mul(v / 10, m.funcs.sin(m.now)))
-        // }
-        const newParams = getParams(m)
-        console.log(newParams)
-        if (newParams) {
-            for (const [k, v] of Object.entries(newParams)) {
-                updateOptions.uniforms[k] = v
-            }
-        }
-    }
-
-    // remove old controllers
-    while (controllers.length > 0) {
-        controllers.pop().destroy();
-    }
-
-    for (const k of Object.keys(systemParams)) {
-        const controller = gui.add(systemParams, k).onChange(updateParams);
-        controllers.push(controller);
-    }
-
-    const button = gui.add({ update: () => updateParams()}, 'update')
-    controllers.push(button)
-
-    updateParams()
+    updateUniforms(JSON.stringify(systemParams))
 }
 
 gui.add(parameters, "system", Object.keys(systems)).onChange((system) => {
@@ -153,8 +135,6 @@ gui.add(parameters, "colormap", [...colormaps.keys()]).onChange((key) => {
 gui.add(parameters, "interval", 0, 500, 10);
 
 gui.add(parameters, "iterations", 1, 500, 1).onChange((iterations) => {
-    // const sin = m.funcs.sin(m.ops.mul(1 / 10, m.now))
-    // updateOptions.uniforms["iterations"] = m.ops.add(m.ops.mul(sin, iterations / 2), iterations / 3)
     updateOptions.uniforms["iterations"] = m.constant({ a: iterations })
 })
 
@@ -211,7 +191,7 @@ function animate() {
 let paused = true;
 
 window.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
+    if (event.shiftKey && event.key === "Enter") {
         paused = !paused;
 
         if (!paused) {
