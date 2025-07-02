@@ -5,6 +5,7 @@ import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
 import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker'
 import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
+import { HasEval, mods } from './modulations';
 
 self.MonacoEnvironment = {
     getWorker(_, label) {
@@ -26,6 +27,37 @@ self.MonacoEnvironment = {
 
 const modelUri = monaco.Uri.parse(window.location.href + "mod.json")
 const model = monaco.editor.createModel("{}", "json", modelUri)
+
+interface UnaryNode {
+    f: "sin" | "cos",
+    x: Node
+}
+
+interface BinaryNode {
+    f: "add" | "sub"
+    x: Node
+    y: Node
+}
+
+type TimeNode = 'time'
+
+type Node = UnaryNode | BinaryNode | TimeNode | number
+
+function buildModParam(m: ReturnType<typeof mods>, node: Node): HasEval {
+    if (node === 'time') {
+        return m.now
+    }
+
+    if (typeof node === 'number') {
+        return m.constant({ a: node })
+    }
+
+    if ('y' in node) {
+        return m.ops[node.f](buildModParam(m, node.x), buildModParam(m, node.y))
+    } else {
+        return m.funcs[node.f](buildModParam(m, node.x))
+    }
+}
 
 monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
     validate: true,
@@ -60,7 +92,7 @@ monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
                     type: "object",
                     properties: {
                         "f": {
-                            enum: [ "+", "-" ],
+                            enum: [ "add", "sub", "mul", "div" ],
                         },
                         "x": { $ref: "#/$defs/Node" },
                         "y": { $ref: "#/$defs/Node" },
@@ -79,7 +111,7 @@ export function newEditor() {
     container.classList.add('arena')
     document.body.appendChild(container)
 
-    monaco.editor.create(container, {
+    const editor = monaco.editor.create(container, {
         model: model,
         theme: "vs-dark",
         lineNumbers: "off",
@@ -87,4 +119,38 @@ export function newEditor() {
             enabled: false
         }
     });
+
+    const setParams = (newParams: { [k: string]: Node }) => {
+        model.setValue(JSON.stringify(newParams, undefined, 2))
+
+    }
+
+    const getParams = (m: ReturnType<typeof mods>) => {
+        const markers = monaco.editor.getModelMarkers({ owner: 'json' })
+        if (markers.length > 0) {
+            return undefined
+        }
+
+        const json = JSON.parse(model.getValue()) as { [k: string]: Node }
+        const params: { [k: string]: HasEval } = {}
+
+        for (const [key, node] of Object.entries(json)) {
+            params[key] = buildModParam(m, node)
+        }
+
+        return params
+    }
+
+    editor.addCommand(
+        monaco.KeyCode.Tab,
+        () => {
+            console.log(monaco.editor.getModelMarkers({ owner: 'json' }))
+            console.log(monaco.editor.tokenize(model.getValue(), 'json'))
+        }
+    )
+
+    return {
+        setParams,
+        getParams,
+    }
 }

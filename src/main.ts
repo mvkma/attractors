@@ -96,18 +96,28 @@ computeShader.next()
 
 let colormap = colormaps.get(parameters.colormap)!;
 
+const { setParams, getParams } = newEditor()
+
 function init(system: keyof typeof systems) {
     const odeSystem = systems[system]()
 
     updateOptions["fragmentShader"] = buildOdeFragmentShader(odeSystem)
 
     const systemParams = odeSystem.getParameters() as { [k: string]: number }
+    setParams(systemParams)
 
     const updateParams = () => {
         odeSystem.setParameters(systemParams)
 
-        for (const [k, v] of Object.entries(odeSystem.getParameters())) {
-            updateOptions.uniforms[k] = m.ops.add(v, m.ops.mul(v / 10, m.funcs.sin(m.now)))
+        // for (const [k, v] of Object.entries(odeSystem.getParameters())) {
+        //     updateOptions.uniforms[k] = m.ops.add(v, m.ops.mul(v / 10, m.funcs.sin(m.now)))
+        // }
+        const newParams = getParams(m)
+        console.log(newParams)
+        if (newParams) {
+            for (const [k, v] of Object.entries(newParams)) {
+                updateOptions.uniforms[k] = v
+            }
         }
     }
 
@@ -120,6 +130,9 @@ function init(system: keyof typeof systems) {
         const controller = gui.add(systemParams, k).onChange(updateParams);
         controllers.push(controller);
     }
+
+    const button = gui.add({ update: () => updateParams()}, 'update')
+    controllers.push(button)
 
     updateParams()
 }
@@ -140,8 +153,9 @@ gui.add(parameters, "colormap", [...colormaps.keys()]).onChange((key) => {
 gui.add(parameters, "interval", 0, 500, 10);
 
 gui.add(parameters, "iterations", 1, 500, 1).onChange((iterations) => {
-    const sin = m.funcs.sin(m.ops.mul(1 / 10, m.now))
-    updateOptions.uniforms["iterations"] = m.ops.add(m.ops.mul(sin, iterations / 2), iterations / 3)
+    // const sin = m.funcs.sin(m.ops.mul(1 / 10, m.now))
+    // updateOptions.uniforms["iterations"] = m.ops.add(m.ops.mul(sin, iterations / 2), iterations / 3)
+    updateOptions.uniforms["iterations"] = m.constant({ a: iterations })
 })
 
 gui.add(parameters, "reset")
@@ -207,9 +221,3 @@ window.addEventListener("keydown", (event) => {
 });
 
 controls.update()
-
-// const arena = document.createElement('div')
-// arena.classList.add('arena')
-// document.body.appendChild(arena)
-
-newEditor()
