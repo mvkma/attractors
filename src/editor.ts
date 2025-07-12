@@ -25,9 +25,6 @@ self.MonacoEnvironment = {
     }
 }
 
-const modelUri = monaco.Uri.parse(window.location.href + "mod.json")
-const model = monaco.editor.createModel("{}", "json", modelUri)
-
 type UnaryFunction = keyof ReturnType<typeof mods>['funcs']
 
 interface UnaryNode {
@@ -70,7 +67,7 @@ monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
     schemaValidation: 'error',
     schemas: [{
         uri: window.location.href + "mod-schema.json",
-        fileMatch: [modelUri.toString()],
+        fileMatch: ['*.json'],
         schema: {
             type: "object",
             additionalProperties: { $ref: "#/$defs/Node" },
@@ -112,7 +109,9 @@ monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
     }]
 })
 
-export function newEditor(container: HTMLElement, callback: (json: string) => void) {
+export function newEditor(container: HTMLElement, callback: (json: string) => void, id: string) {
+    const modelUri = monaco.Uri.parse(window.location.href + `${id}.json`)
+    const model = monaco.editor.createModel("{}", "json", modelUri)
 
     const editor = monaco.editor.create(container, {
         model: model,
@@ -127,18 +126,29 @@ export function newEditor(container: HTMLElement, callback: (json: string) => vo
         model.setValue(JSON.stringify(newParams, undefined, 2))
     }
 
-    editor.addCommand(
-        monaco.KeyCode.Tab,
-        () => {
-            const markers = monaco.editor.getModelMarkers({ owner: 'json' })
+    const getParams = () => model.getValue()
+
+    editor.addAction({
+        id: 'update-params',
+        label: 'Update',
+        keybindings: [
+            monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
+        ],
+        run: (ed) => {
+            const markers = monaco.editor.getModelMarkers({ owner: 'json', resource: modelUri })
             if (markers.length > 0) {
                 return undefined
             }
-            callback(model.getValue())
+            const mod = ed.getModel()
+            if (!mod) {
+                return undefined
+            }
+            callback(mod.getValue())
         }
-    )
+    })
 
     return {
-        setParams
+        setParams,
+        getParams,
     }
 }

@@ -11,10 +11,6 @@ import { buildComputeShader, buildOdeFragmentShader, ComputeShaderUpdateOptions 
 import { HasEval, mods } from './modulations'
 import { buildModParam, newEditor, type Node } from './editor';
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div id="scene">
-  </div>
-`
 const width = 800;
 const height = 600;
 
@@ -65,22 +61,24 @@ controls.addEventListener("change", render);
 const parameters = {
     system: "lorenz",
     colormap: "red",
-    interval: 50,
-    iterations: 1,
     reset: () => updateOptions.reset = true,
     showArrows: true,
 };
 
 const m = mods({ t: 0, dt: 0.05 })
 
-type UpdateOptions = Omit<ComputeShaderUpdateOptions, 'uniforms'> & {
-    uniforms: { [k: string]: HasEval }
+interface UpdateOptions {
+    fragmentShader?: string
+    reset?: boolean
+    modelParams: { [k: string]: HasEval }
+    viewParams: { [k: string]: HasEval }
 }
 
 const updateOptions: UpdateOptions = {
     fragmentShader: undefined,
     reset: false,
-    uniforms: {}
+    modelParams: {},
+    viewParams: {},
 }
 
 const computeShader = buildComputeShader({
@@ -94,19 +92,28 @@ computeShader.next()
 
 let colormap = colormaps.get(parameters.colormap)!;
 
-const container = document.createElement('div')
-container.classList.add('arena')
-document.body.appendChild(container)
-
 function updateUniforms(text: string) {
     const json = JSON.parse(text) as { [k: string]: Node }
 
     for (const [key, node] of Object.entries(json)) {
-        updateOptions.uniforms[key] = buildModParam(m, node)
+        updateOptions.modelParams[key] = buildModParam(m, node)
     }
 }
 
-const editor = newEditor(container, updateUniforms)
+const modelParamsEditor = newEditor(document.querySelector("#modelParamEditor")!, updateUniforms, 'modelParams')
+
+function updateViewParams(text: string) {
+    const json = JSON.parse(text) as { [k: string]: Node }
+
+    for (const [key, node] of Object.entries(json)) {
+        updateOptions.viewParams[key] = buildModParam(m, node)
+    }
+}
+
+const viewParamsEditor = newEditor(document.querySelector("#viewParamEditor")!, updateViewParams, 'viewParams')
+
+viewParamsEditor.setParams({iterations: 10})
+updateViewParams(viewParamsEditor.getParams())
 
 function init(system: keyof typeof systems) {
     const odeSystem = systems[system]()
@@ -114,9 +121,8 @@ function init(system: keyof typeof systems) {
     updateOptions["fragmentShader"] = buildOdeFragmentShader(odeSystem)
 
     const systemParams = odeSystem.getParameters() as { [k: string]: number }
-    editor.setParams(systemParams)
-
-    updateUniforms(JSON.stringify(systemParams))
+    modelParamsEditor.setParams(systemParams)
+    updateUniforms(modelParamsEditor.getParams())
 }
 
 gui.add(parameters, "system", Object.keys(systems)).onChange((system) => {
@@ -131,12 +137,6 @@ gui.add(parameters, "colormap", [...colormaps.keys()]).onChange((key) => {
     colormap = colormaps.get(key)!;
     colormap.mirror = true;
 });
-
-gui.add(parameters, "interval", 0, 500, 10);
-
-gui.add(parameters, "iterations", 1, 500, 1).onChange((iterations) => {
-    updateOptions.uniforms["iterations"] = m.constant({ a: iterations })
-})
 
 gui.add(parameters, "reset")
 
@@ -160,24 +160,18 @@ const computeShaderUpdateOptions: ComputeShaderUpdateOptions = {
     uniforms: {}
 }
 
-const rot = m.funcs.sin(m.ops.mul(m.now, 2))
-
 function animate() {
-    if (!paused) {
-        setTimeout(() => {
-            requestAnimationFrame(animate);
-        }, parameters.interval);
-    }
-
     m.tick()
-
-    pointCloud.rotation.x += (rot.eval() + 1) / 1000
 
     computeShaderUpdateOptions.reset = updateOptions.reset
     computeShaderUpdateOptions.fragmentShader = updateOptions.fragmentShader
-    for (const [k, func] of Object.entries(updateOptions.uniforms)) {
+
+    for (const [k, func] of Object.entries(updateOptions.modelParams)) {
         computeShaderUpdateOptions.uniforms[k] = { value: func.eval() }
     }
+
+    const iterations = updateOptions.viewParams['iterations'] ?? 1
+    computeShaderUpdateOptions.uniforms['iterations'] = { value: iterations.eval() }
 
     const activeTexture = computeShader.next(computeShaderUpdateOptions)
     updateOptions.reset = false
@@ -186,6 +180,10 @@ function animate() {
     pointCloud.setUniform('positions', activeTexture.value)
 
     render();
+
+    if (!paused) {
+        requestAnimationFrame(animate);
+    }
 }
 
 let paused = true;
