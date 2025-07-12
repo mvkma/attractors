@@ -18,13 +18,14 @@ precision highp sampler2D;
 precision highp float;
 
 uniform sampler2D positions;
+uniform float pointSize;
 
 out vec3 color;
 
 void main() {
   vec4 pos = texture(positions, position.xy).xyzw;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(pos.xyz, 1.0);
-  gl_PointSize = 1.0;
+  gl_PointSize = pointSize;
 
   float alpha = pos.w / 250.0;
   // color = vec3(alpha, 1.0 - alpha, 0.3);
@@ -57,7 +58,8 @@ export class PointCloud extends THREE.Points<THREE.BufferGeometry, THREE.ShaderM
       vertexShader: vertexShaderPointCloud,
       fragmentShader: fragmentShaderPointCloud,
       uniforms: {
-        positions: { value: null }
+          positions: { value: null },
+          pointSize: { value: 1.0 }
       }
     })
 

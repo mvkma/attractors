@@ -179,6 +179,10 @@ function animate() {
 
     pointCloud.setUniform('positions', activeTexture.value)
 
+    if (updateOptions.viewParams['pointSize']) {
+        pointCloud.setUniform('pointSize', updateOptions.viewParams['pointSize'].eval())
+    }
+
     render();
 
     if (!paused) {

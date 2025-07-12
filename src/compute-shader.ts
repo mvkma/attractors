@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { OdeSystem } from './systems'
 
 const U_INPUT_TEXTURE = 'uInputTexture'
+const MAX_ITERATIONS = 500
 
 const vertexShaderQuad = `
 precision highp float;
@@ -33,6 +34,7 @@ void main() {
 `
 
 const fragmentShaderQuad = `
+#define MAX_ITERATIONS ${MAX_ITERATIONS};
 precision highp sampler2D;
 precision highp float;
 
@@ -55,7 +57,7 @@ void main() {
   vec3 pos = texture(${U_INPUT_TEXTURE}, vUv).xyz;
 
   float i = 0.0;
-  while ((i < iterations) && (i < 100.0)) {
+  while (i < iterations) {
     pos = midPoint(pos, stepSize);
     i++;
   }
