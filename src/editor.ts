@@ -5,7 +5,7 @@ import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
 import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker'
 import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
-import { HasEval, mods } from './modulations';
+import { BinaryFuncKey, HasEval, mods, TernaryFuncKey, UnaryFuncKey } from './modulations';
 
 self.MonacoEnvironment = {
     getWorker(_, label) {
@@ -25,24 +25,27 @@ self.MonacoEnvironment = {
     }
 }
 
-type UnaryFunction = keyof ReturnType<typeof mods>['funcs']
-
 interface UnaryNode {
-    f: UnaryFunction
+    f: UnaryFuncKey
     x: Node
 }
 
-type BinaryFunction = keyof ReturnType<typeof mods>['ops']
-
 interface BinaryNode {
-    f: BinaryFunction
+    f: BinaryFuncKey
     x: Node
     y: Node
 }
 
+interface TernaryNode {
+    f: TernaryFuncKey
+    x: Node
+    y: Node
+    t: Node
+}
+
 type TimeNode = 'time'
 
-export type Node = UnaryNode | BinaryNode | TimeNode | number
+export type Node = UnaryNode | BinaryNode | TernaryNode | TimeNode | number
 
 export function buildModParam(m: ReturnType<typeof mods>, node: Node): HasEval {
     if (node === 'time') {
@@ -53,10 +56,12 @@ export function buildModParam(m: ReturnType<typeof mods>, node: Node): HasEval {
         return m.constant({ a: node })
     }
 
-    if ('y' in node) {
-        return m.ops[node.f](buildModParam(m, node.x), buildModParam(m, node.y))
+    if ('t' in node) {
+        return m.ternaryFuncs[node.f](buildModParam(m, node.x), buildModParam(m, node.y), buildModParam(m, node.t))
+    } else if ('y' in node) {
+        return m.binaryFuncs[node.f](buildModParam(m, node.x), buildModParam(m, node.y))
     } else {
-        return m.funcs[node.f](buildModParam(m, node.x))
+        return m.unaryFuncs[node.f](buildModParam(m, node.x))
     }
 }
 
@@ -77,6 +82,7 @@ monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
                         { type: "number" },
                         { $ref: "#/$defs/UnaryNode" },
                         { $ref: "#/$defs/BinaryNode" },
+                        { $ref: "#/$defs/TernaryNode" },
                         { $ref: "#/$defs/TimeNode" },
                     ],
                 },
@@ -84,7 +90,7 @@ monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
                     type: "object",
                     properties: {
                         "f": {
-                            enum: Object.keys(m.funcs)
+                            enum: Object.keys(m.unaryFuncs)
                         },
                         "x": { $ref: "#/$defs/Node" }
                     },
@@ -95,12 +101,25 @@ monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
                     type: "object",
                     properties: {
                         "f": {
-                            enum: Object.keys(m.ops)
+                            enum: Object.keys(m.binaryFuncs)
                         },
                         "x": { $ref: "#/$defs/Node" },
                         "y": { $ref: "#/$defs/Node" },
                     },
                     required: ["f", "x", "y"],
+                    additionalProperties: false
+                },
+                "TernaryNode": {
+                    type: "object",
+                    properties: {
+                        "f": {
+                            enum: Object.keys(m.ternaryFuncs)
+                        },
+                        "x": { $ref: "#/$defs/Node" },
+                        "y": { $ref: "#/$defs/Node" },
+                        "t": { $ref: "#/$defs/Node" },
+                    },
+                    required: ["f", "x", "y", "t"],
                     additionalProperties: false
                 },
                 "TimeNode": { "const": "time" },

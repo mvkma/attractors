@@ -90,8 +90,6 @@ const computeShader = buildComputeShader({
 
 computeShader.next()
 
-let colormap = colormaps.get(parameters.colormap)!;
-
 function updateUniforms(text: string) {
     const json = JSON.parse(text) as { [k: string]: Node }
 
