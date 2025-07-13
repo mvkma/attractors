@@ -67,65 +67,93 @@ export function buildModParam(m: ReturnType<typeof mods>, node: Node): HasEval {
 
 const m = mods({ t: 0, dt: 0.01})
 
+const nodeDefsSchema = {
+    "Node": {
+        oneOf: [
+            { type: "number" },
+            { $ref: "#/$defs/UnaryNode" },
+            { $ref: "#/$defs/BinaryNode" },
+            { $ref: "#/$defs/TernaryNode" },
+            { $ref: "#/$defs/TimeNode" },
+        ],
+    },
+    "UnaryNode": {
+        type: "object",
+        properties: {
+            "f": {
+                enum: Object.keys(m.unaryFuncs)
+            },
+            "x": { $ref: "#/$defs/Node" }
+        },
+        required: ["f", "x"],
+        additionalProperties: false
+    },
+    "BinaryNode": {
+        type: "object",
+        properties: {
+            "f": {
+                enum: Object.keys(m.binaryFuncs)
+            },
+            "x": { $ref: "#/$defs/Node" },
+            "y": { $ref: "#/$defs/Node" },
+        },
+        required: ["f", "x", "y"],
+        additionalProperties: false
+    },
+    "TernaryNode": {
+        type: "object",
+        properties: {
+            "f": {
+                enum: Object.keys(m.ternaryFuncs)
+            },
+            "x": { $ref: "#/$defs/Node" },
+            "y": { $ref: "#/$defs/Node" },
+            "t": { $ref: "#/$defs/Node" },
+        },
+        required: ["f", "x", "y", "t"],
+        additionalProperties: false
+    },
+    "TimeNode": { "const": "time" },
+}
+
+const modelParamsSchema = {
+    type: "object",
+    additionalProperties: { $ref: "#/$defs/Node" },
+    $defs: nodeDefsSchema,
+}
+
+const viewParamsSchema = {
+    type: "object",
+    properties: {
+        "iterations": { $ref: "#/$defs/Node" },
+        "colorIndex": { $ref: "#/$defs/Node" },
+        "scaleX": { $ref: "#/$defs/Node" },
+        "scaleY": { $ref: "#/$defs/Node" },
+        "scaleZ": { $ref: "#/$defs/Node" },
+        "rotationX": { $ref: "#/$defs/Node" },
+        "rotationY": { $ref: "#/$defs/Node" },
+        "rotationZ": { $ref: "#/$defs/Node" },
+    },
+    additionalProperties: { $ref: "#/$defs/Node" },
+    $defs: nodeDefsSchema,
+}
+
+
 monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
     validate: true,
     schemaValidation: 'error',
-    schemas: [{
-        uri: window.location.href + "mod-schema.json",
-        fileMatch: ['*.json'],
-        schema: {
-            type: "object",
-            additionalProperties: { $ref: "#/$defs/Node" },
-            $defs: {
-                "Node": {
-                    oneOf: [
-                        { type: "number" },
-                        { $ref: "#/$defs/UnaryNode" },
-                        { $ref: "#/$defs/BinaryNode" },
-                        { $ref: "#/$defs/TernaryNode" },
-                        { $ref: "#/$defs/TimeNode" },
-                    ],
-                },
-                "UnaryNode": {
-                    type: "object",
-                    properties: {
-                        "f": {
-                            enum: Object.keys(m.unaryFuncs)
-                        },
-                        "x": { $ref: "#/$defs/Node" }
-                    },
-                    required: [ "f", "x" ],
-                    additionalProperties: false
-                },
-                "BinaryNode": {
-                    type: "object",
-                    properties: {
-                        "f": {
-                            enum: Object.keys(m.binaryFuncs)
-                        },
-                        "x": { $ref: "#/$defs/Node" },
-                        "y": { $ref: "#/$defs/Node" },
-                    },
-                    required: ["f", "x", "y"],
-                    additionalProperties: false
-                },
-                "TernaryNode": {
-                    type: "object",
-                    properties: {
-                        "f": {
-                            enum: Object.keys(m.ternaryFuncs)
-                        },
-                        "x": { $ref: "#/$defs/Node" },
-                        "y": { $ref: "#/$defs/Node" },
-                        "t": { $ref: "#/$defs/Node" },
-                    },
-                    required: ["f", "x", "y", "t"],
-                    additionalProperties: false
-                },
-                "TimeNode": { "const": "time" },
-            }
-        }
-    }]
+    schemas: [
+        {
+            uri: window.location.href + "modelParams.json",
+            fileMatch: ['modelParams.json'],
+            schema: modelParamsSchema,
+        },
+        {
+            uri: window.location.href + "viewParams.json",
+            fileMatch: ['viewParams.json'],
+            schema: viewParamsSchema,
+        },
+    ]
 })
 
 export function newEditor(container: HTMLElement, callback: (json: string) => void, id: string) {
