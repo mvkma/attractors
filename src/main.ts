@@ -105,6 +105,7 @@ const modelParamsEditor = newEditor(document.querySelector("#modelParamEditor")!
 function updateViewParams(text: string) {
     const json = JSON.parse(text) as { [k: string]: Node }
 
+    updateOptions.viewParams = {}
     for (const [key, node] of Object.entries(json)) {
         updateOptions.viewParams[key] = buildModParam(m, node)
     }
@@ -178,10 +179,11 @@ function animate() {
     updateOptions.fragmentShader = undefined
 
     pointCloud.setUniform('positions', activeTexture.value)
+    pointCloud.setUniform('pointSize', updateOptions.viewParams['pointSize']?.eval() || 1.0)
 
-    if (updateOptions.viewParams['pointSize']) {
-        pointCloud.setUniform('pointSize', updateOptions.viewParams['pointSize'].eval())
-    }
+    pointCloud.scale.x = updateOptions.viewParams['scaleX']?.eval() || 1.0
+    pointCloud.scale.y = updateOptions.viewParams['scaleY']?.eval() || 1.0
+    pointCloud.scale.z = updateOptions.viewParams['scaleZ']?.eval() || 1.0
 
     render();
 
