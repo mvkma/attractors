@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ColorMap } from './colormap';
+import colormaps from './colormaps';
 
 interface ColorOptionsConstant {
   type: "constant";
@@ -18,7 +19,11 @@ precision highp sampler2D;
 precision highp float;
 
 uniform sampler2D positions;
+uniform sampler2D colormaps;
 uniform float pointSize;
+uniform float colorIndex;
+uniform float colorMode;
+uniform float colorScale;
 
 out vec3 color;
 
@@ -27,9 +32,12 @@ void main() {
   gl_Position = projectionMatrix * modelViewMatrix * vec4(pos.xyz, 1.0);
   gl_PointSize = pointSize;
 
-  float alpha = pos.w / 250.0;
-  // color = vec3(alpha, 1.0 - alpha, 0.3);
-  color = abs(normalize(pos.xyz));
+  if (colorMode == 0.0) {
+    color = abs(normalize(pos.xyz));
+  } else {
+    float alpha = pos.w * colorScale;
+    color = texture(colormaps, vec2(alpha, colorIndex)).rgb;
+  }
 }
 `
 
@@ -51,6 +59,29 @@ export interface PointCloudOptions {
   height: number
 }
 
+function createColorTexture() {
+    const resolution = 256;
+    const data = new Uint8Array(4 * resolution * colormaps.size)
+
+    let i = 0;
+    for (const k of colormaps.keys()) {
+        const colorData = colormaps.get(k)!.toUint8Array(resolution)
+        data.set(colorData, i * colorData.length)
+        i++;
+    }
+
+    const texture = new THREE.DataTexture(data, resolution, colormaps.size)
+    texture.format = THREE.RGBAFormat
+    texture.type = THREE.UnsignedByteType
+    texture.wrapS = THREE.ClampToEdgeWrapping
+    texture.wrapT = THREE.ClampToEdgeWrapping
+    texture.magFilter = THREE.LinearFilter
+    texture.minFilter = THREE.LinearFilter
+    texture.needsUpdate = true
+
+    return texture
+}
+
 export class PointCloud extends THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial> {
   constructor(options: PointCloudOptions) {
     const material = new THREE.ShaderMaterial({
@@ -59,7 +90,11 @@ export class PointCloud extends THREE.Points<THREE.BufferGeometry, THREE.ShaderM
       fragmentShader: fragmentShaderPointCloud,
       uniforms: {
           positions: { value: null },
-          pointSize: { value: 1.0 }
+          pointSize: { value: 1.0 },
+          colormaps: { value: createColorTexture() },
+          colorIndex: { value: 0.0 },
+          colorMode: { value: 0.0 },
+          colorScale: { value: 1.0 },
       }
     })
 

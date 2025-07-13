@@ -130,13 +130,14 @@ gui.add(parameters, "system", Object.keys(systems)).onChange((system) => {
     init(system as keyof typeof systems);
 });
 
-gui.add(parameters, "colormap", [...colormaps.keys()]).onChange((key) => {
+const colormapKeys = [...colormaps.keys()]
+gui.add(parameters, "colormap", colormapKeys).onChange((key) => {
     if (!colormaps.has(key)) {
         return;
     }
 
-    colormap = colormaps.get(key)!;
-    colormap.mirror = true;
+    const ix = colormapKeys.indexOf(key) / colormaps.size
+    updateOptions.viewParams['colorIndex'] = m.constant({ a: ix })
 });
 
 gui.add(parameters, "reset")
@@ -180,10 +181,22 @@ function animate() {
 
     pointCloud.setUniform('positions', activeTexture.value)
     pointCloud.setUniform('pointSize', updateOptions.viewParams['pointSize']?.eval() || 1.0)
+    pointCloud.setUniform('colorMode', updateOptions.viewParams['colorMode']?.eval() || 0.0)
+    pointCloud.setUniform('colorScale', updateOptions.viewParams['colorScale']?.eval() || 1.0)
+
+    if (updateOptions.viewParams['colorIndex']) {
+        pointCloud.setUniform('colorIndex', updateOptions.viewParams['colorIndex']!.eval())
+    }
 
     pointCloud.scale.x = updateOptions.viewParams['scaleX']?.eval() || 1.0
     pointCloud.scale.y = updateOptions.viewParams['scaleY']?.eval() || 1.0
     pointCloud.scale.z = updateOptions.viewParams['scaleZ']?.eval() || 1.0
+
+    const RAD_PER_DEG = Math.PI / 180.0
+
+    pointCloud.rotation.x = updateOptions.viewParams['rotationX']?.eval() * RAD_PER_DEG || 0.0
+    pointCloud.rotation.y = updateOptions.viewParams['rotationY']?.eval() * RAD_PER_DEG || 0.0
+    pointCloud.rotation.z = updateOptions.viewParams['rotationZ']?.eval() * RAD_PER_DEG || 0.0
 
     render();
 

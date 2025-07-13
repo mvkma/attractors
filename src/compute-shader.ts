@@ -62,7 +62,7 @@ void main() {
     i++;
   }
 
-  fragColor = vec4(pos, length(pos));
+  fragColor = vec4(pos, length(xdot(pos)));
 }
 `
 
