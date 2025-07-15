@@ -81,9 +81,10 @@ const nodeDefsSchema = {
         type: "object",
         properties: {
             "f": {
-                enum: Object.keys(m.unaryFuncs)
+                enum: Object.keys(m.unaryFuncs),
+                description: "Unary function name"
             },
-            "x": { $ref: "#/$defs/Node" }
+            "x": { $ref: "#/$defs/Node", description: "First argument" }
         },
         required: ["f", "x"],
         additionalProperties: false
@@ -92,10 +93,11 @@ const nodeDefsSchema = {
         type: "object",
         properties: {
             "f": {
-                enum: Object.keys(m.binaryFuncs)
+                enum: Object.keys(m.binaryFuncs),
+                description: "Binary function name"
             },
-            "x": { $ref: "#/$defs/Node" },
-            "y": { $ref: "#/$defs/Node" },
+            "x": { $ref: "#/$defs/Node", description: "First argument" },
+            "y": { $ref: "#/$defs/Node", description: "Second argument" },
         },
         required: ["f", "x", "y"],
         additionalProperties: false
@@ -104,16 +106,20 @@ const nodeDefsSchema = {
         type: "object",
         properties: {
             "f": {
-                enum: Object.keys(m.ternaryFuncs)
+                enum: Object.keys(m.ternaryFuncs),
+                description: "Ternary function name"
             },
-            "x": { $ref: "#/$defs/Node" },
-            "y": { $ref: "#/$defs/Node" },
-            "t": { $ref: "#/$defs/Node" },
+            "x": { $ref: "#/$defs/Node", description: "First argument" },
+            "y": { $ref: "#/$defs/Node", description: "Second argument" },
+            "t": { $ref: "#/$defs/Node", description: "Third argument" },
         },
         required: ["f", "x", "y", "t"],
         additionalProperties: false
     },
-    "TimeNode": { "const": "time" },
+    "TimeNode": {
+        "const": "time",
+        "description": "Global time that increases with every frame."
+    },
 }
 
 const modelParamsSchema = {
@@ -125,14 +131,14 @@ const modelParamsSchema = {
 const viewParamsSchema = {
     type: "object",
     properties: {
-        "iterations": { $ref: "#/$defs/Node" },
+        "iterations": { $ref: "#/$defs/Node", description: "Timesteps per frame" },
         "colorIndex": { $ref: "#/$defs/Node" },
-        "scaleX": { $ref: "#/$defs/Node" },
-        "scaleY": { $ref: "#/$defs/Node" },
-        "scaleZ": { $ref: "#/$defs/Node" },
-        "rotationX": { $ref: "#/$defs/Node" },
-        "rotationY": { $ref: "#/$defs/Node" },
-        "rotationZ": { $ref: "#/$defs/Node" },
+        "scaleX": { $ref: "#/$defs/Node", description: "Scale in x-direction" },
+        "scaleY": { $ref: "#/$defs/Node", description: "Scale in y-direction" },
+        "scaleZ": { $ref: "#/$defs/Node", description: "Scale in z-direction" },
+        "rotationX": { $ref: "#/$defs/Node", description: "Rotation around x-axis" },
+        "rotationY": { $ref: "#/$defs/Node", description: "Rotation around y-axis" },
+        "rotationZ": { $ref: "#/$defs/Node", description: "Rotation around z-axis" },
     },
     additionalProperties: { $ref: "#/$defs/Node" },
     $defs: nodeDefsSchema,
@@ -166,6 +172,9 @@ export function newEditor(container: HTMLElement, callback: (json: string) => vo
         lineNumbers: "off",
         minimap: {
             enabled: false
+        },
+        scrollbar: {
+            useShadows: false,
         }
     });
 
