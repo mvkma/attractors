@@ -8,9 +8,40 @@
   </head>
   <body>
     <div id="app">
+        <div class="columns">
+            <div>
+                <span class="text-left">attractors</span>
+            </div>
+        </div>
         <div id="scene"></div>
-        <div id="modelParamEditor" class="arena"></div>
-        <div id="viewParamEditor" class="arena"></div>
+        <div class="columns">
+            <div>
+                <div class="param-row">
+                    <label for="system-select">System:</label>
+                    <select id="system-select">
+                        <option value="lorenz">Lorenz</option>
+                        <option value="roessler">Rössler</option>
+                        <option value="thomas">Thomas</option>
+                        <option value="modifiedChua">Modified Chua</option>
+                    </select>
+                </div>
+                <div class="param-row">
+                    <label for="arrow-checkbox">Show arrows:</label>
+                    <input type="checkbox" id="arrow-checkbox" checked="true">
+                </div>
+                <div class="button-row">
+                    <button type="button" id="button-reset">reset</button>
+                </div>
+            </div>
+        </div>
+        <div class="columns">
+            <div>
+                <div class="editor" id="modelParamEditor"></div>
+            </div>
+            <div>
+                <div class="editor" id="viewParamEditor"></div>
+            </div>
+        </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

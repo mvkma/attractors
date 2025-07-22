@@ -4,7 +4,6 @@ import * as THREE from 'three';
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { systems } from './systems';
 import { ColorMode, PointCloud } from './visualizers';
-import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
 import Stats from 'stats-gl';
 import { buildComputeShader, buildOdeFragmentShader, ComputeShaderUpdateOptions } from './compute-shader';
 import { HasEval, mods } from './modulations'
@@ -16,7 +15,6 @@ const height = 600;
 const scene = new THREE.Scene();
 const aspect = height / width;
 const camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
-const gui = new GUI();
 
 const renderer = new THREE.WebGLRenderer()
 renderer.setSize(width, height);
@@ -147,19 +145,6 @@ function init(system: keyof typeof systems) {
     updateUniforms(modelParamsEditor.getParams())
 }
 
-gui.add(parameters, "system", Object.keys(systems)).onChange((system) => {
-    init(system as keyof typeof systems);
-});
-
-gui.add(parameters, "reset")
-
-gui.add(parameters, "showArrows").onChange((showArrows) => {
-    arrows.forEach((arrow) => arrow.visible = showArrows)
-    if (paused) {
-        render()
-    }
-})
-
 init(parameters.system as keyof typeof systems);
 
 const pointCloud = new PointCloud({
@@ -238,5 +223,24 @@ window.addEventListener("keydown", (event) => {
         }
     }
 });
+
+document.querySelector('#arrow-checkbox')?.addEventListener('input', (event) => {
+    const showArrows = (event.target as HTMLInputElement).checked
+    arrows.forEach((arrow) => arrow.visible = showArrows)
+    if (paused) {
+        render()
+    }
+})
+
+document.querySelector('#button-reset')?.addEventListener('click', (event) => {
+    updateOptions.reset = true
+    event.preventDefault()
+})
+
+document.querySelector('#system-select')?.addEventListener('input', (event) => {
+    const system = (event.target as HTMLSelectElement).value
+    init(system as keyof typeof systems);
+    event.preventDefault()
+})
 
 controls.update()
