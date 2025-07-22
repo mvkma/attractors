@@ -6,6 +6,8 @@ import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker'
 import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 import { BinaryFuncKey, HasEval, mods, TernaryFuncKey, UnaryFuncKey } from './modulations';
+import colormaps from './colormaps';
+import { ColorMode } from './visualizers';
 
 self.MonacoEnvironment = {
     getWorker(_, label) {
@@ -131,8 +133,25 @@ const modelParamsSchema = {
 const viewParamsSchema = {
     type: "object",
     properties: {
+        "color": {
+            type: "object",
+            properties: {
+                "mode": {
+                    enum: Object.keys(ColorMode),
+                    description: "Color mode",
+                },
+                "map": {
+                    enum: [...colormaps.keys()],
+                    description: "Color map (only for colorMode 'velocity')",
+                },
+                "scale": {
+                    $ref: "#/$defs/Node",
+                    description: "Color scale (only for colorMode 'velocity')"
+                },
+            },
+            additionalProperties: false,
+        },
         "iterations": { $ref: "#/$defs/Node", description: "Timesteps per frame" },
-        "colorIndex": { $ref: "#/$defs/Node" },
         "scaleX": { $ref: "#/$defs/Node", description: "Scale in x-direction" },
         "scaleY": { $ref: "#/$defs/Node", description: "Scale in y-direction" },
         "scaleZ": { $ref: "#/$defs/Node", description: "Scale in z-direction" },
@@ -143,7 +162,6 @@ const viewParamsSchema = {
     additionalProperties: { $ref: "#/$defs/Node" },
     $defs: nodeDefsSchema,
 }
-
 
 monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
     validate: true,

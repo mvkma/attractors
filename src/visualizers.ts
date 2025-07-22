@@ -14,6 +14,13 @@ interface ColorOptionsColormap {
 
 export type ColorOptions = ColorOptionsConstant | ColorOptionsColormap;
 
+export const ColorMode = {
+    angle: 0,
+    velocity: 1,
+} as const
+
+const colormapKeys = [...colormaps.keys()]
+
 const vertexShaderPointCloud = `
 precision highp sampler2D;
 precision highp float;
@@ -93,7 +100,7 @@ export class PointCloud extends THREE.Points<THREE.BufferGeometry, THREE.ShaderM
           pointSize: { value: 1.0 },
           colormaps: { value: createColorTexture() },
           colorIndex: { value: 0.0 },
-          colorMode: { value: 0.0 },
+          colorMode: { value: ColorMode.angle },
           colorScale: { value: 1.0 },
       }
     })
@@ -112,5 +119,18 @@ export class PointCloud extends THREE.Points<THREE.BufferGeometry, THREE.ShaderM
 
   setUniform<TValue = any>(key: string, value: TValue) {
     this.material.uniforms[key] = { value: value }
+  }
+
+  setColorMode(colorMode: keyof typeof ColorMode) {
+    this.material.uniforms['colorMode'] = { value: ColorMode[colorMode] }
+  }
+
+  setColorMap(colorMap: string) {
+    if (!colormaps.has(colorMap)) {
+      return;
+    }
+
+    const ix = colormapKeys.indexOf(colorMap) / colormaps.size
+    this.material.uniforms['colorIndex'] = { value: ix }
   }
 }

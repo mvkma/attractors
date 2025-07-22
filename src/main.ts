@@ -3,8 +3,7 @@ import './style.css'
 import * as THREE from 'three';
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { systems } from './systems';
-import { PointCloud } from './visualizers';
-import colormaps from './colormaps';
+import { ColorMode, PointCloud } from './visualizers';
 import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
 import Stats from 'stats-gl';
 import { buildComputeShader, buildOdeFragmentShader, ComputeShaderUpdateOptions } from './compute-shader';
@@ -67,11 +66,22 @@ const parameters = {
 
 const m = mods({ t: 0, dt: 0.05 })
 
+interface HasEvalParams { [k: string]: HasEval }
+
+interface ColorParams {
+    mode?: keyof typeof ColorMode
+    map?: string
+    scale?: HasEval
+}
+
+type Overwrite<T, U> = Pick<T, Exclude<keyof T, keyof U>> & U;
+type ViewParams = Overwrite<HasEvalParams, { color?: ColorParams }>
+
 interface UpdateOptions {
     fragmentShader?: string
     reset?: boolean
     modelParams: { [k: string]: HasEval }
-    viewParams: { [k: string]: HasEval }
+    viewParams: ViewParams
 }
 
 const updateOptions: UpdateOptions = {
@@ -101,11 +111,24 @@ function updateUniforms(text: string) {
 const modelParamsEditor = newEditor(document.querySelector("#modelParamEditor")!, updateUniforms, 'modelParams')
 
 function updateViewParams(text: string) {
-    const json = JSON.parse(text) as { [k: string]: Node }
+    const json = JSON.parse(text) as { [k in keyof ViewParams]: any }
 
     updateOptions.viewParams = {}
     for (const [key, node] of Object.entries(json)) {
-        updateOptions.viewParams[key] = buildModParam(m, node)
+        if (key === 'color') {
+            continue
+        }
+        updateOptions.viewParams[key] = buildModParam(m, node as Node)
+    }
+
+    if ('color' in json) {
+        updateOptions.viewParams.color = {}
+
+        if ('scale' in json.color) {
+            json.color.scale = buildModParam(m, json.color.scale as Node)
+        }
+
+        updateOptions.viewParams.color = json.color as ColorParams
     }
 }
 
@@ -126,16 +149,6 @@ function init(system: keyof typeof systems) {
 
 gui.add(parameters, "system", Object.keys(systems)).onChange((system) => {
     init(system as keyof typeof systems);
-});
-
-const colormapKeys = [...colormaps.keys()]
-gui.add(parameters, "colormap", colormapKeys).onChange((key) => {
-    if (!colormaps.has(key)) {
-        return;
-    }
-
-    const ix = colormapKeys.indexOf(key) / colormaps.size
-    updateOptions.viewParams['colorIndex'] = m.constant({ a: ix })
 });
 
 gui.add(parameters, "reset")
@@ -179,11 +192,22 @@ function animate() {
 
     pointCloud.setUniform('positions', activeTexture.value)
     pointCloud.setUniform('pointSize', updateOptions.viewParams['pointSize']?.eval() || 1.0)
-    pointCloud.setUniform('colorMode', updateOptions.viewParams['colorMode']?.eval() || 0.0)
-    pointCloud.setUniform('colorScale', updateOptions.viewParams['colorScale']?.eval() || 1.0)
 
-    if (updateOptions.viewParams['colorIndex']) {
-        pointCloud.setUniform('colorIndex', updateOptions.viewParams['colorIndex']!.eval())
+
+    if (updateOptions.viewParams['color']) {
+        const colorParams = updateOptions.viewParams['color']
+        if (colorParams.map) {
+            pointCloud.setColorMap(colorParams.map)
+        }
+
+        if (colorParams.mode) {
+            pointCloud.setColorMode(colorParams.mode)
+        }
+
+        pointCloud.setUniform('colorScale', colorParams.scale?.eval() || 1.0)
+    }
+
+    if (updateOptions.viewParams['colorMap']) {
     }
 
     pointCloud.scale.x = updateOptions.viewParams['scaleX']?.eval() || 1.0
