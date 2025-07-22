@@ -243,4 +243,48 @@ document.querySelector('#system-select')?.addEventListener('input', (event) => {
     event.preventDefault()
 })
 
+document.querySelector('#button-link')?.addEventListener('click', (event) => {
+    const modelParams = JSON.parse(modelParamsEditor.getParams())
+    const viewParams = JSON.parse(viewParamsEditor.getParams())
+
+    const data = {
+        modelParams: modelParams,
+        viewParams: viewParams,
+        system: (document.querySelector('#system-select') as HTMLSelectElement).value
+        // TODO arrows
+    }
+
+    const encoded = btoa(JSON.stringify(data))
+    window.location.hash = encoded
+
+    event.preventDefault()
+})
+
+function loadHash(hash: string) {
+    // TODO do this properly
+    try {
+        const data = JSON.parse(atob(hash))
+        init(data['system'])
+        const select = document.querySelector('#system-select') as HTMLSelectElement
+        select.value = data['system']
+
+        modelParamsEditor.setParams(data['modelParams'])
+        updateUniforms(modelParamsEditor.getParams())
+
+        viewParamsEditor.setParams(data['viewParams'])
+        updateViewParams(viewParamsEditor.getParams())
+    } catch (err) {
+        console.warn(err)
+    }
+}
+
+window.addEventListener('hashchange', (event) => {
+    const url = new URL(event.newURL)
+    loadHash(url.hash.slice(1))
+
+    event.preventDefault()
+})
+
+loadHash(window.location.hash.slice(1))
+
 controls.update()
