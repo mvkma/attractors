@@ -48,20 +48,6 @@ const stats = new Stats({ horizontal: true, trackGPU: true })
 stats.init(renderer)
 document.body.appendChild(stats.dom)
 
-function render() {
-    renderer.render(scene, camera);
-    stats.update()
-}
-
-controls.addEventListener("change", render);
-
-const parameters = {
-    system: "lorenz",
-    colormap: "red",
-    reset: () => updateOptions.reset = true,
-    showArrows: true,
-};
-
 const m = mods({ t: 0, dt: 0.05 })
 
 interface HasEvalParams { [k: string]: HasEval }
@@ -132,7 +118,7 @@ function updateViewParams(text: string) {
 
 const viewParamsEditor = newEditor(document.querySelector("#viewParamEditor")!, updateViewParams, 'viewParams')
 
-viewParamsEditor.setParams({iterations: 10})
+viewParamsEditor.setParams({ iterations: 10 })
 updateViewParams(viewParamsEditor.getParams())
 
 function init(system: keyof typeof systems) {
@@ -145,7 +131,7 @@ function init(system: keyof typeof systems) {
     updateUniforms(modelParamsEditor.getParams())
 }
 
-init(parameters.system as keyof typeof systems);
+init('lorenz');
 
 const pointCloud = new PointCloud({
     height: 256,
@@ -157,6 +143,15 @@ scene.add(pointCloud)
 const computeShaderUpdateOptions: ComputeShaderUpdateOptions = {
     uniforms: {}
 }
+
+function render() {
+    renderer.render(scene, camera);
+
+    stats.update()
+}
+
+controls.addEventListener("change", render);
+
 
 function animate() {
     m.tick()
@@ -178,7 +173,6 @@ function animate() {
     pointCloud.setUniform('positions', activeTexture.value)
     pointCloud.setUniform('pointSize', updateOptions.viewParams['pointSize']?.eval() || 1.0)
 
-
     if (updateOptions.viewParams['color']) {
         const colorParams = updateOptions.viewParams['color']
         if (colorParams.map) {
@@ -190,9 +184,6 @@ function animate() {
         }
 
         pointCloud.setUniform('colorScale', colorParams.scale?.eval() || 1.0)
-    }
-
-    if (updateOptions.viewParams['colorMap']) {
     }
 
     pointCloud.scale.x = updateOptions.viewParams['scaleX']?.eval() || 1.0
@@ -214,77 +205,94 @@ function animate() {
 
 let paused = true;
 
-window.addEventListener("keydown", (event) => {
-    if (event.shiftKey && event.key === "Enter") {
-        paused = !paused;
+const pausedButton: HTMLButtonElement = document.querySelector('#button-paused')!
 
-        if (!paused) {
-            animate();
-        }
+function togglePaused() {
+    paused = !paused
+    pausedButton.textContent = paused ? 'start' : 'stop'
+
+    if (!paused) {
+        animate()
     }
-});
+}
 
-document.querySelector('#arrow-checkbox')?.addEventListener('input', (event) => {
-    const showArrows = (event.target as HTMLInputElement).checked
+pausedButton.addEventListener('click', () => togglePaused())
+
+function toggleArrows(showArrows: boolean) {
     arrows.forEach((arrow) => arrow.visible = showArrows)
     if (paused) {
         render()
     }
-})
+}
+
+const arrowCheckbox: HTMLInputElement = document.querySelector('#arrow-checkbox')!
+arrowCheckbox.addEventListener('input', () => toggleArrows(arrowCheckbox.checked))
 
 document.querySelector('#button-reset')?.addEventListener('click', (event) => {
     updateOptions.reset = true
     event.preventDefault()
 })
 
-document.querySelector('#system-select')?.addEventListener('input', (event) => {
-    const system = (event.target as HTMLSelectElement).value
-    init(system as keyof typeof systems);
-    event.preventDefault()
-})
+const systemSelect: HTMLInputElement = document.querySelector('#system-select')!
+systemSelect.addEventListener('input', () => init(systemSelect.value as keyof typeof systems))
 
-document.querySelector('#button-link')?.addEventListener('click', (event) => {
+function getState() {
     const modelParams = JSON.parse(modelParamsEditor.getParams())
     const viewParams = JSON.parse(viewParamsEditor.getParams())
+    const system = systemSelect.value
+    const showArrows = arrowCheckbox.checked
 
-    const data = {
+    return {
         modelParams: modelParams,
         viewParams: viewParams,
-        system: (document.querySelector('#system-select') as HTMLSelectElement).value
-        // TODO arrows
-    }
-
-    const encoded = btoa(JSON.stringify(data))
-    window.location.hash = encoded
-
-    event.preventDefault()
-})
-
-function loadHash(hash: string) {
-    // TODO do this properly
-    try {
-        const data = JSON.parse(atob(hash))
-        init(data['system'])
-        const select = document.querySelector('#system-select') as HTMLSelectElement
-        select.value = data['system']
-
-        modelParamsEditor.setParams(data['modelParams'])
-        updateUniforms(modelParamsEditor.getParams())
-
-        viewParamsEditor.setParams(data['viewParams'])
-        updateViewParams(viewParamsEditor.getParams())
-    } catch (err) {
-        console.warn(err)
+        system: system,
+        showArrows: showArrows,
     }
 }
 
-window.addEventListener('hashchange', (event) => {
-    const url = new URL(event.newURL)
-    loadHash(url.hash.slice(1))
+function loadState(state: { [k: string]: any }) {
+    systemSelect.value = state['system']
+    init(state['system'] as keyof typeof systems)
 
+    arrowCheckbox.checked = state['showArrows']
+    toggleArrows(arrowCheckbox.checked)
+
+    modelParamsEditor.setParams(state['modelParams'])
+    viewParamsEditor.setParams(state['viewParams'])
+
+    updateUniforms(modelParamsEditor.getParams())
+    updateViewParams(viewParamsEditor.getParams())
+}
+
+function loadStateFromHash(hash: string) {
+    if (hash.length === 0) {
+        return
+    }
+
+    let state = undefined
+    try {
+        state = JSON.parse(atob(hash))
+    } catch (err) {
+        return
+    }
+
+    console.log('Loading state from hash.')
+    loadState(state)
+}
+
+document.querySelector('#button-link')?.addEventListener('click', (event) => {
+    const state = getState()
+    const encoded = btoa(JSON.stringify(state))
+    window.location.hash = encoded
     event.preventDefault()
 })
 
-loadHash(window.location.hash.slice(1))
+window.addEventListener('hashchange', (event) => {
+    const url = new URL(event.newURL)
+    loadStateFromHash(url.hash.slice(1))
+    event.preventDefault()
+})
+
+loadStateFromHash(window.location.hash.slice(1))
 
 controls.update()
