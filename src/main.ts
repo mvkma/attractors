@@ -241,12 +241,18 @@ function getState() {
     const viewParams = JSON.parse(viewParamsEditor.getParams())
     const system = systemSelect.value
     const showArrows = arrowCheckbox.checked
+    const cameraPosition = camera.position
+    const cameraZoom = camera.zoom
+    const controlTarget = controls.target
 
     return {
         modelParams: modelParams,
         viewParams: viewParams,
         system: system,
         showArrows: showArrows,
+        cameraPosition: cameraPosition,
+        cameraZoom: cameraZoom,
+        controlTarget: controlTarget,
     }
 }
 
@@ -262,6 +268,14 @@ function loadState(state: { [k: string]: any }) {
 
     updateUniforms(modelParamsEditor.getParams())
     updateViewParams(viewParamsEditor.getParams())
+
+    const position = state['cameraPosition']
+    const zoom = state['cameraZoom']
+    const target = state['controlTarget']
+
+    camera.position.set(position['x'], position['y'], position['z'])
+    camera.zoom = zoom
+    controls.target.set(target['x'], target['y'], target['z'])
 }
 
 function loadStateFromHash(hash: string) {
