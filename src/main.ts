@@ -13,7 +13,7 @@ const width = 800;
 const height = 600;
 
 const scene = new THREE.Scene();
-const aspect = height / width;
+const aspect = width / height;
 const camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
 
 const renderer = new THREE.WebGLRenderer()
@@ -145,7 +145,7 @@ const computeShaderUpdateOptions: ComputeShaderUpdateOptions = {
 }
 
 function render() {
-    renderer.render(scene, camera);
+    renderer.render(scene, camera)
 
     stats.update()
 }
@@ -224,6 +224,24 @@ function toggleArrows(showArrows: boolean) {
         render()
     }
 }
+
+const fullscreenIcon: HTMLElement = document.querySelector('#fullscreen-icon')!
+
+document.addEventListener("fullscreenchange", () => {
+    if (document.fullscreenElement) {
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth, window.innerHeight)
+    } else {
+        camera.aspect = 800 / 600
+        camera.updateProjectionMatrix()
+        renderer.setSize(800, 600)
+    }
+});
+
+fullscreenIcon.addEventListener('click', () => {
+    renderer.domElement.requestFullscreen()
+})
 
 const arrowCheckbox: HTMLInputElement = document.querySelector('#arrow-checkbox')!
 arrowCheckbox.addEventListener('input', () => toggleArrows(arrowCheckbox.checked))

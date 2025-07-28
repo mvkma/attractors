@@ -29,7 +29,7 @@ body {
     padding: 0.5em 0.5em 0.5em 0.5em;
     background: var(--bg-color);
     color: var(--text-color);
-    width: 800px;
+    max-width: 800px;
 }
 
 a {
@@ -38,7 +38,7 @@ a {
 
 .columns {
     display: flex;
-    width: 800px;
+    max-width: 800px;
 
     > div {
         font-size: 0.9em;
@@ -112,4 +112,15 @@ input[type=""]:focus {
     margin-right: 5px !important;
 }
 
+#scene {
+    position: relative;
+}
 
+#fullscreen-icon {
+    cursor: pointer;
+    position: absolute;
+    top: 0px;
+    right: 10px;
+    color: white;
+    font-size: 32px;
+}
