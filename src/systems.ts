@@ -204,9 +204,47 @@ export class ModifiedChuaSystem implements OdeSystem {
     }
 }
 
+type VanDerPolSystemParams = typeof VanDerPolSystem.defaults
+
+export class VanDerPolSystem implements OdeSystem {
+    static defaults = {
+        mu: 1.0,
+    }
+
+    private mu: number = VanDerPolSystem.defaults.mu
+
+    constructor() {}
+
+    setParameters(params: Partial<VanDerPolSystemParams>) {
+        Object.assign(this, params)
+    }
+
+    getParameters(): VanDerPolSystemParams {
+        return {
+            mu: this.mu,
+        }
+    }
+
+    shaderChunk() {
+        return `
+    uniform float mu;
+    vec3 xdot(vec3 x) {
+        return vec3(x[1], mu * (1.0 - x[0] * x[0]) * x[1] - x[0], -x[2]);
+    }
+`
+    }
+
+    func(_t: number, x: Float32Array, xdot: Float32Array) {
+        xdot[0] = x[1]
+        xdot[1] = this.mu * (1.0 - x[0] * x[0]) * x[1] - x[0]
+        xdot[2] = -x[2]
+    }
+}
+
 export const systems = {
     "lorenz": () => new LorenzSystem(),
     "roessler": () => new RoesslerSystem(),
     "thomas": () => new ThomasSystem(),
     "modifiedChua": () => new ModifiedChuaSystem(),
+    "vanDerPol": () => new VanDerPolSystem(),
 }
