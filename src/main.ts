@@ -294,6 +294,7 @@ function loadState(state: { [k: string]: any }) {
     camera.position.set(position['x'], position['y'], position['z'])
     camera.zoom = zoom
     controls.target.set(target['x'], target['y'], target['z'])
+    controls.update()
 }
 
 function loadStateFromHash(hash: string) {
