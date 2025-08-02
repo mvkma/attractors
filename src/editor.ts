@@ -163,17 +163,19 @@ const viewParamsSchema = {
     $defs: nodeDefsSchema,
 }
 
+const origin = (new URL(window.location.href)).origin
+
 monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
     validate: true,
     schemaValidation: 'error',
     schemas: [
         {
-            uri: window.location.href + "modelParams.json",
+            uri: origin + '/modelParams.json',
             fileMatch: ['modelParams.json'],
             schema: modelParamsSchema,
         },
         {
-            uri: window.location.href + "viewParams.json",
+            uri: origin + "/viewParams.json",
             fileMatch: ['viewParams.json'],
             schema: viewParamsSchema,
         },
@@ -181,7 +183,7 @@ monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
 })
 
 export function newEditor(container: HTMLElement, callback: (json: string) => void, id: string) {
-    const modelUri = monaco.Uri.parse(window.location.href + `${id}.json`)
+    const modelUri = monaco.Uri.parse(origin + `/${id}.json`)
     const model = monaco.editor.createModel("{}", "json", modelUri)
 
     const editor = monaco.editor.create(container, {
