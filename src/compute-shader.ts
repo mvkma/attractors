@@ -27,7 +27,7 @@ float random(vec2 v) {
 }
 
 void main() {
-  vec3 pos = vec3(random(vUv + 5.0), random(vUv - 5.0), random(vUv)) * 100.0 - 50.0;
+  vec3 pos = vec3(random(vUv + 5.0), random(vUv - 5.0), random(vUv)) * 10.0 - 5.0;
   // vec3 pos = vec3(vUv, random(vUv)) * 100.0 - 50.0;
   fragColor = vec4(pos, 1.0);
 }

@@ -156,6 +156,10 @@ controls.addEventListener("change", render);
 function animate() {
     m.tick()
 
+    if (updateOptions.reset) {
+        m.setTime(0)
+    }
+
     computeShaderUpdateOptions.reset = updateOptions.reset
     computeShaderUpdateOptions.fragmentShader = updateOptions.fragmentShader
 

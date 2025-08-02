@@ -197,7 +197,12 @@ export function newEditor(container: HTMLElement, callback: (json: string) => vo
     });
 
     const setParams = (newParams: { [k: string]: Node }) => {
-        model.setValue(JSON.stringify(newParams, undefined, 2))
+        const mod = editor.getModel()
+        if (!mod) {
+            return
+        }
+
+        mod.setValue(JSON.stringify(newParams, undefined, 2))
     }
 
     const getParams = () => model.getValue()
