@@ -48,6 +48,8 @@ const stats = new Stats({ horizontal: true, trackGPU: true })
 stats.init(renderer)
 document.body.appendChild(stats.dom)
 
+const statusElement = document.querySelector('#status')! as HTMLElement
+
 const m = mods({ t: 0, dt: 0.05 })
 
 interface HasEvalParams { [k: string]: HasEval }
@@ -92,7 +94,7 @@ function updateUniforms(text: string) {
     }
 }
 
-const modelParamsEditor = newEditor(document.querySelector("#modelParamEditor")!, updateUniforms, 'modelParams')
+const modelParamsEditor = newEditor(document.querySelector("#modelParamEditor")!, updateUniforms, 'modelParams', statusElement)
 
 function updateViewParams(text: string) {
     const json = JSON.parse(text) as { [k in keyof ViewParams]: any }
@@ -116,7 +118,7 @@ function updateViewParams(text: string) {
     }
 }
 
-const viewParamsEditor = newEditor(document.querySelector("#viewParamEditor")!, updateViewParams, 'viewParams')
+const viewParamsEditor = newEditor(document.querySelector("#viewParamEditor")!, updateViewParams, 'viewParams', statusElement)
 
 viewParamsEditor.setParams({ iterations: 10 })
 updateViewParams(viewParamsEditor.getParams())

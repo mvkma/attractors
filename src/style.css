@@ -17,6 +17,8 @@
     --bg-color: #150f0e;
     --src-bg-color: #1d1f21;
     --src-fg-color: #c5c8c6;
+    --org-src-warning-fg: #cc6666;
+    --org-src-keyword-fg: #b5bd68;
 }
 
 body {
@@ -123,4 +125,19 @@ input[type=""]:focus {
     right: 10px;
     color: white;
     font-size: 32px;
+}
+
+.status-neutral::before {
+    content: 'o ';
+    color: var(--text-color);
+}
+
+.status-failure::before {
+    content: '! ';
+    color: var(--org-src-warning-fg);
+}
+
+.status-success::before {
+    content: '✓ ';
+    color: var(--org-src-keyword-fg);
 }

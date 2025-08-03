@@ -182,7 +182,7 @@ monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
     ]
 })
 
-export function newEditor(container: HTMLElement, callback: (json: string) => void, id: string) {
+export function newEditor(container: HTMLElement, callback: (json: string) => void, id: string, statusElement: HTMLElement) {
     const modelUri = monaco.Uri.parse(origin + `/${id}.json`)
     const model = monaco.editor.createModel("{}", "json", modelUri)
 
@@ -218,6 +218,10 @@ export function newEditor(container: HTMLElement, callback: (json: string) => vo
         run: (ed) => {
             const markers = monaco.editor.getModelMarkers({ owner: 'json', resource: modelUri })
             if (markers.length > 0) {
+                statusElement.textContent = `Error: ${markers[0].message}`
+                statusElement.classList.remove('status-neutral')
+                statusElement.classList.remove('status-success')
+                statusElement.classList.add('status-failure')
                 return undefined
             }
             const mod = ed.getModel()
@@ -225,6 +229,10 @@ export function newEditor(container: HTMLElement, callback: (json: string) => vo
                 return undefined
             }
             callback(mod.getValue())
+            statusElement.textContent = `Success.`
+            statusElement.classList.remove('status-neutral')
+            statusElement.classList.remove('status-failure')
+            statusElement.classList.add('status-success')
         }
     })
 
